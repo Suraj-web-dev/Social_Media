@@ -1,69 +1,63 @@
-import React, { useState } from 'react'
+import React, { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import {
-  dummyConnectionsData,
-  dummyMessagesData,
-  dummyUser2Data,
-  dummyUserData
-} from '../assets'
+import { useDispatch, useSelector } from 'react-redux'
+import { fetchUserProfile } from '../redux/slices/userSlice'
+import { fetchMessages, sendMessage } from '../redux/slices/messageSlice'
 import ChatHeader from '../components/chat/ChatHeader'
 import MessageList from '../components/chat/MessageList'
 import ChatInput from '../components/chat/ChatInput'
+import { Loader2 } from 'lucide-react'
 
 const ChatBox = () => {
   const { userId } = useParams()
+  const dispatch = useDispatch()
+  const { user: currentUser } = useSelector((state) => state.auth)
+  const { profileUser } = useSelector((state) => state.user)
+  const { messages, loading } = useSelector((state) => state.message)
 
-  // Find recipient based on URL param or fallback
-  const recipient =
-    dummyConnectionsData.find((u) => u._id === userId) || dummyUser2Data
+  useEffect(() => {
+    if (userId) {
+      dispatch(fetchUserProfile(userId))
+      dispatch(fetchMessages(userId))
+    }
+  }, [userId, dispatch])
 
-  // Messages state
-  const [messages, setMessages] = useState(dummyMessagesData || [])
+  const recipient = profileUser || {
+    _id: userId,
+    full_name: 'User',
+    username: 'user',
+    profile_picture: '/sample_profile.jpg',
+  }
 
   // Send message handler
-  const handleSendMessage = ({ text, media_url }) => {
-    const newMessage = {
-      _id: `msg_${Date.now()}`,
-      from_user_id: dummyUserData._id,
-      to_user_id: recipient._id,
-      text,
-      message_type: media_url ? 'image' : 'text',
-      media_url: media_url || '',
-      createdAt: new Date().toISOString(),
-      seen: false
-    }
+  const handleSendMessage = ({ text, file }) => {
+    if (!text?.trim() && !file) return
 
-    setMessages((prev) => [...prev, newMessage])
+    const formData = new FormData()
+    if (text) formData.append('text', text)
+    if (file) formData.append('media', file)
 
-    // Optional subtle simulated response after 1.5s if it's the first test message
-    if (messages.length < 6) {
-      setTimeout(() => {
-        const reply = {
-          _id: `msg_${Date.now() + 1}`,
-          from_user_id: recipient._id,
-          to_user_id: dummyUserData._id,
-          text: 'Hey there! Thanks for reaching out. How are you doing today?',
-          message_type: 'text',
-          media_url: '',
-          createdAt: new Date().toISOString(),
-          seen: true
-        }
-        setMessages((prev) => [...prev, reply])
-      }, 1500)
-    }
+    dispatch(sendMessage({ userId, formData }))
   }
 
   return (
-    <div className='h-screen flex flex-col bg-white overflow-hidden max-w-4xl mx-auto border-x border-gray-100 shadow-sm'>
+    <div className='h-screen flex flex-col bg-white dark:bg-slate-900 overflow-hidden max-w-4xl mx-auto border-x border-gray-100 dark:border-slate-800 shadow-sm'>
       {/* Top Chat Header */}
       <ChatHeader recipient={recipient} />
 
       {/* Scrollable Messages Area */}
-      <MessageList
-        messages={messages}
-        currentUserId={dummyUserData._id}
-        recipient={recipient}
-      />
+      {loading && messages.length === 0 ? (
+        <div className='flex-1 flex flex-col items-center justify-center text-indigo-600 gap-2'>
+          <Loader2 className='w-7 h-7 animate-spin' />
+          <p className='text-sm text-gray-500 dark:text-gray-400'>Loading conversation...</p>
+        </div>
+      ) : (
+        <MessageList
+          messages={messages}
+          currentUserId={currentUser?._id}
+          recipient={recipient}
+        />
+      )}
 
       {/* Bottom Message Input Bar */}
       <ChatInput onSendMessage={handleSendMessage} />

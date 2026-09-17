@@ -1,45 +1,88 @@
-import React, { useRef, useState } from 'react'
-import { Camera, Image as ImageIcon, X } from 'lucide-react'
+import React, { useRef, useState, useEffect } from 'react'
+import { Camera, Loader2, X } from 'lucide-react'
+import { useDispatch, useSelector } from 'react-redux'
+import { updateUserProfile } from '../redux/slices/authSlice'
+import { showToast } from '../utils/toast'
 
-const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
+const EditProfileModal = ({ user, isOpen, onClose }) => {
+  const dispatch = useDispatch()
+  const { actionLoading } = useSelector((state) => state.auth)
+
   const avatarInputRef = useRef(null)
   const coverInputRef = useRef(null)
 
-  const [fullName, setFullName] = useState(user.full_name || '')
-  const [username, setUsername] = useState(user.username || '')
-  const [bio, setBio] = useState(user.bio || '')
-  const [location, setLocation] = useState(user.location || '')
-  const [profilePicture, setProfilePicture] = useState(user.profile_picture || '')
-  const [coverPhoto, setCoverPhoto] = useState(user.cover_photo || '')
+  const [fullName, setFullName] = useState(user?.full_name || '')
+  const [username, setUsername] = useState(user?.username || '')
+  const [bio, setBio] = useState(user?.bio || '')
+  const [location, setLocation] = useState(user?.location || '')
+
+  // Previews
+  const [profilePicturePreview, setProfilePicturePreview] = useState(
+    user?.profile_picture || ''
+  )
+  const [coverPhotoPreview, setCoverPhotoPreview] = useState(
+    user?.cover_photo || ''
+  )
+
+  // Real File Objects for Multer Upload
+  const [profilePictureFile, setProfilePictureFile] = useState(null)
+  const [coverPhotoFile, setCoverPhotoFile] = useState(null)
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || '')
+      setUsername(user.username || '')
+      setBio(user.bio || '')
+      setLocation(user.location || '')
+      setProfilePicturePreview(user.profile_picture || '')
+      setCoverPhotoPreview(user.cover_photo || '')
+      setProfilePictureFile(null)
+      setCoverPhotoFile(null)
+    }
+  }, [user, isOpen])
 
   if (!isOpen) return null
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
-      setProfilePicture(URL.createObjectURL(file))
+      setProfilePictureFile(file)
+      setProfilePicturePreview(URL.createObjectURL(file))
     }
   }
 
   const handleCoverChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
-      setCoverPhoto(URL.createObjectURL(file))
+      setCoverPhotoFile(file)
+      setCoverPhotoPreview(URL.createObjectURL(file))
     }
   }
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault()
-    onSave({
-      ...user,
-      full_name: fullName,
-      username,
-      bio,
-      location,
-      profile_picture: profilePicture,
-      cover_photo: coverPhoto
-    })
-    onClose()
+
+    // Create FormData for Multer multipart/form-data upload
+    const formData = new FormData()
+    formData.append('full_name', fullName)
+    formData.append('username', username)
+    formData.append('bio', bio)
+    formData.append('location', location)
+
+    if (profilePictureFile) {
+      formData.append('profile_picture', profilePictureFile)
+    }
+    if (coverPhotoFile) {
+      formData.append('cover_photo', coverPhotoFile)
+    }
+
+    const resultAction = await dispatch(updateUserProfile(formData))
+    if (updateUserProfile.fulfilled.match(resultAction)) {
+      showToast.success('Profile updated successfully!')
+      onClose()
+    } else {
+      showToast.error(resultAction.payload || 'Failed to update profile.')
+    }
   }
 
   return (
@@ -69,9 +112,9 @@ const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
 
               {/* Cover Banner Preview */}
               <div className='relative h-28 sm:h-36 w-full rounded-xl overflow-hidden bg-gradient-to-r from-blue-200 via-indigo-100 to-pink-200 dark:from-slate-800 dark:to-slate-700 border border-gray-200 dark:border-slate-700 group'>
-                {coverPhoto && (
+                {coverPhotoPreview && (
                   <img
-                    src={coverPhoto}
+                    src={coverPhotoPreview}
                     alt='Cover'
                     className='w-full h-full object-cover'
                   />
@@ -97,7 +140,7 @@ const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
               <div className='relative -mt-10 sm:-mt-12 ml-4 flex items-end gap-3'>
                 <div className='relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white dark:border-slate-900 shadow-md bg-white dark:bg-slate-800 group'>
                   <img
-                    src={profilePicture}
+                    src={profilePicturePreview || '/sample_profile.jpg'}
                     alt='Avatar'
                     className='w-full h-full object-cover'
                   />
@@ -127,7 +170,7 @@ const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
                     Change photo
                   </button>
                   <p className='text-[10px] text-gray-400'>
-                    Recommended 400x400 JPG/PNG
+                    Recommended JPG/PNG/WebP
                   </p>
                 </div>
               </div>
@@ -206,9 +249,17 @@ const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
             </button>
             <button
               type='submit'
-              className='px-5 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl cursor-pointer font-semibold text-sm shadow-md transition active:scale-95'
+              disabled={actionLoading}
+              className='px-5 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl cursor-pointer font-semibold text-sm shadow-md transition active:scale-95 disabled:opacity-50 flex items-center gap-2'
             >
-              Save Changes
+              {actionLoading ? (
+                <>
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <span>Save Changes</span>
+              )}
             </button>
           </div>
         </form>
@@ -218,4 +269,3 @@ const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
 }
 
 export default EditProfileModal
-

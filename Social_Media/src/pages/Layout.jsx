@@ -2,10 +2,10 @@ import React, { useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import { Outlet } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
-import { dummyUserData } from '../assets'
+import { useSelector } from 'react-redux'
 
 const Layout = () => {
-  const user = dummyUserData
+  const { user } = useSelector((state) => state.auth)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return user ? (
@@ -34,7 +34,7 @@ const Layout = () => {
     </div>
   ) : (
     <div className='h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100'>
-      <h1 className='text-xl font-medium'>Loading...</h1>
+      <h1 className='text-xl font-medium'>Loading PingUp...</h1>
     </div>
   )
 }
