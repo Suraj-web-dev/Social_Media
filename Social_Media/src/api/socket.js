@@ -7,11 +7,13 @@ import {
 import { receiveNotification } from '../redux/slices/notificationSlice'
 import { showToast } from '../utils/toast'
 
-const SOCKET_URL = import.meta.env.VITE_BACKEND_URL
+let SOCKET_URL = import.meta.env.VITE_BACKEND_URL
   ? import.meta.env.VITE_BACKEND_URL.replace(/\/api\/?$/, '')
   : (import.meta.env.PROD
       ? 'https://social-media-012l.onrender.com'
       : 'http://localhost:5000')
+
+SOCKET_URL = SOCKET_URL.replace('social-media-0121.onrender.com', 'social-media-012l.onrender.com')
 
 let socket = null
 let currentConnectedUserId = null
