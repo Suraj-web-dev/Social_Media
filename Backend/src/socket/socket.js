@@ -16,10 +16,7 @@ const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*")) {
-        return callback(null, true);
-      }
-      return callback(null, true); // Allow during production deployment
+      return callback(null, origin);
     },
     methods: ["GET", "POST"],
     credentials: true,
