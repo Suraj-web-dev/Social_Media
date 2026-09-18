@@ -10,7 +10,7 @@ import { showToast } from '../utils/toast'
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL
   ? import.meta.env.VITE_BACKEND_URL.replace(/\/api\/?$/, '')
   : (import.meta.env.PROD
-      ? 'https://social-media-0121.onrender.com'
+      ? 'https://social-media-012l.onrender.com'
       : 'http://localhost:5000')
 
 let socket = null

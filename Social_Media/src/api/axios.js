@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_BACKEND_URL
-  let url = envUrl || (import.meta.env.PROD ? 'https://social-media-0121.onrender.com' : 'http://localhost:5000')
+  let url = envUrl || (import.meta.env.PROD ? 'https://social-media-012l.onrender.com' : 'http://localhost:5000')
   url = url.trim().replace(/\/+$/, '')
   if (!url.endsWith('/api')) {
     url = `${url}/api`
