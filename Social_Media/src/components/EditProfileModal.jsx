@@ -86,7 +86,7 @@ const EditProfileModal = ({ user, isOpen, onClose }) => {
   }
 
   return (
-    <div className='fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto'>
+    <div className='fixed inset-0 bg-black/75 backdrop-blur-xs z-[110] flex items-center justify-center p-3 sm:p-4 overflow-y-auto'>
       <div className='bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-8'>
         {/* Header */}
         <div className='flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800'>

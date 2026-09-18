@@ -28,7 +28,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
   }
 
   return (
-    <div className='fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150'>
+    <div className='fixed inset-0 bg-black/75 backdrop-blur-xs z-[110] flex items-center justify-center p-4 animate-in fade-in duration-150'>
       <div className='bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden'>
         {/* Header */}
         <div className='flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 dark:border-slate-800'>

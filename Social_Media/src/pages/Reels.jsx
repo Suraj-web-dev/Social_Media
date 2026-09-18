@@ -202,8 +202,8 @@ const ReelItem = ({
         </div>
       )}
 
-      {/* Top Floating Bar: "Reels" badge + Mute Toggle */}
-      <div className='absolute top-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-auto'>
+      {/* Top Floating Bar: "Reels" badge + Mute Toggle (With right clearance on mobile for layout menu button) */}
+      <div className='absolute top-3 sm:top-4 left-3 sm:left-4 right-16 sm:right-4 flex items-center justify-between z-20 pointer-events-auto'>
         <div className='flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md text-white text-xs font-semibold'>
           <Film className='w-3.5 h-3.5 text-indigo-400' />
           <span>Reels</span>
@@ -508,11 +508,11 @@ const Reels = () => {
   }
 
   return (
-    <div className='w-full h-full flex justify-center items-center py-2 md:py-4 px-2 bg-slate-100 dark:bg-slate-950'>
+    <div className='w-full h-full flex justify-center items-center p-0 sm:py-2 md:py-4 sm:px-2 bg-black sm:bg-slate-100 dark:sm:bg-slate-950 overflow-hidden'>
       {/* Reels Snap Scroll Viewport */}
       <div
         ref={containerRef}
-        className='h-[88vh] md:h-[92vh] max-h-[820px] w-full max-w-[420px] overflow-y-scroll snap-y snap-mandatory rounded-3xl shadow-2xl relative custom-scrollbar bg-black'
+        className='h-full sm:h-[88vh] md:h-[92vh] sm:max-h-[820px] w-full max-w-full sm:max-w-[420px] overflow-y-scroll snap-y snap-mandatory sm:rounded-3xl shadow-2xl relative custom-scrollbar bg-black'
       >
         {reels.map((reel, index) => (
           <ReelItem
