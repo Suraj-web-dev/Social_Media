@@ -20,16 +20,38 @@ const PORT = process.env.PORT || 5000
 // Connect to MongoDB Database
 connectDB()
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://social-media-1-dovl.onrender.com',
+  'https://social-media-1dovl.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+].filter(Boolean)
+
 // Middlewares
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true)
-      return callback(null, origin) // Automatically reflects requesting origin
+      // Allow if origin is in whitelist or is an onrender.com / localhost subdomain
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.onrender.com') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1')
+      ) {
+        return callback(null, origin)
+      }
+      return callback(null, origin)
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 )
+app.options('*', cors())
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 app.use(cookieParser())
