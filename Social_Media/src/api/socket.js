@@ -8,8 +8,10 @@ import { receiveNotification } from '../redux/slices/notificationSlice'
 import { showToast } from '../utils/toast'
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL
-  ? import.meta.env.VITE_BACKEND_URL.replace('/api', '')
-  : 'http://localhost:5000'
+  ? import.meta.env.VITE_BACKEND_URL.replace(/\/api\/?$/, '')
+  : (import.meta.env.PROD
+      ? 'https://social-media-0121.onrender.com'
+      : 'http://localhost:5000')
 
 let socket = null
 let currentConnectedUserId = null
@@ -77,4 +79,3 @@ export const disconnectSocket = () => {
 }
 
 export const getSocket = () => socket
-
