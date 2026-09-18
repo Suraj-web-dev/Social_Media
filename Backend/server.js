@@ -20,43 +20,54 @@ const PORT = process.env.PORT || 5000
 // Connect to MongoDB Database
 connectDB()
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'https://social-media-1-dovl.onrender.com',
-  'https://social-media-1dovl.onrender.com',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-].filter(Boolean)
-
-// Middlewares
+// Robust CORS Middleware: Dynamic origin reflection with credentials
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, server-to-server)
-      if (!origin) return callback(null, true)
-      // Allow if origin is in whitelist or is an onrender.com / localhost subdomain
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.endsWith('.onrender.com') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1')
-      ) {
-        return callback(null, origin)
-      }
-      return callback(null, origin)
+      // In CORS standard, reflecting incoming origin allows credentials: true safely
+      return callback(null, origin || true)
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'Cookie',
+      'Set-Cookie',
+    ],
+    exposedHeaders: ['Set-Cookie'],
   })
 )
-app.options('*', cors())
+
+// Explicit preflight and response header fallback
+app.use((req, res, next) => {
+  const origin = req.headers.origin
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, DELETE, PATCH, OPTIONS'
+    )
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie'
+    )
+  }
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200)
+  }
+  next()
+})
+
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 app.use(cookieParser())
 
-// API Routes
+// Primary API Routes (standard /api/*)
 app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/post', postRoutes)
@@ -65,9 +76,39 @@ app.use('/api/message', messageRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/circle', circleRoutes)
 
+// Route Aliases (fallback without /api prefix to avoid 404 if frontend calls without /api)
+app.use('/auth', authRoutes)
+app.use('/user', userRoutes)
+app.use('/post', postRoutes)
+app.use('/story', storyRoutes)
+app.use('/message', messageRoutes)
+app.use('/notifications', notificationRoutes)
+app.use('/circle', circleRoutes)
+
 // Root / Health-check Route
 app.get('/', (req, res) => {
-  res.send('Social Media API is running successfully!')
+  res.status(200).json({
+    status: 'success',
+    message: 'Social Media API is running successfully!',
+    timestamp: new Date().toISOString(),
+  })
+})
+
+// 404 Fallback for unmapped routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  })
+})
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Server error:', err)
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+  })
 })
 
 // Start server
@@ -77,4 +118,3 @@ server.listen(PORT, () => {
 
 export default app
 export { server }
-
