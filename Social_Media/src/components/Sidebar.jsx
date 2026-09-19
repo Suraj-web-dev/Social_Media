@@ -4,7 +4,7 @@ import ThemeToggle from './ThemeToggle'
 import AccountSettingsModal from './AccountSettingsModal'
 import NotificationsModal from './NotificationsModal'
 import { Link, useNavigate } from 'react-router-dom'
-import { CirclePlus, LogOutIcon, Settings, X } from 'lucide-react'
+import { CirclePlus, LogOutIcon, Settings, X, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDispatch, useSelector } from 'react-redux'
 import { logoutUser } from '../redux/slices/authSlice'
@@ -26,7 +26,7 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
 
   return (
     <>
-      {/* Dark Backdrop Overlay on Mobile (Blocks background clicks & hides reel/feed bleed) */}
+      {/* Dark Backdrop Overlay on Mobile */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -35,43 +35,50 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={() => setsidebarOpen(false)}
-            className='fixed inset-0 bg-black/80 backdrop-blur-xs z-[90] sm:hidden'
+            className='fixed inset-0 bg-black/70 backdrop-blur-md z-[90] sm:hidden'
           />
         )}
       </AnimatePresence>
 
-      {/* Main Sidebar Panel */}
+      {/* Main Glass Sidebar Panel */}
       <aside
-        className={`fixed sm:static inset-y-0 left-0 z-[100] w-72 sm:w-60 xl:w-72 max-w-[85vw] bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col justify-between items-center shadow-2xl sm:shadow-none transition-transform duration-300 ease-in-out ${
+        className={`fixed sm:static inset-y-0 left-0 z-[100] w-72 sm:w-64 xl:w-72 max-w-[85vw] glass-nav sm:bg-white/70 sm:dark:bg-[#0B0F19]/80 sm:backdrop-blur-2xl border-r border-slate-200/80 dark:border-white/[0.07] flex flex-col justify-between items-center shadow-2xl sm:shadow-none transition-transform duration-300 ease-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'
         }`}
       >
         <div className='w-full'>
-          {/* Top Logo, Theme Toggle, & Mobile Close Button Row */}
-          <div className='flex items-center justify-between px-5 sm:px-6 py-3.5 my-1'>
-            <img
+          {/* Top Logo & Action Controls */}
+          <div className='flex items-center justify-between px-5 sm:px-6 py-4'>
+            <div
               onClick={() => {
                 navigate('/')
                 setsidebarOpen?.(false)
               }}
-              src='/logo.svg'
-              className='w-24 cursor-pointer'
-              alt='logo'
-            />
+              className='flex items-center gap-2 cursor-pointer group'
+            >
+              <img
+                src='/logo.svg'
+                className='w-24 transition-transform group-hover:scale-105'
+                alt='logo'
+              />
+            </div>
+
             <div className='flex items-center gap-1'>
               <ThemeToggle />
               {/* Mobile Close Button */}
               <button
                 type='button'
                 onClick={() => setsidebarOpen?.(false)}
-                className='p-1.5 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition sm:hidden cursor-pointer'
+                className='p-2 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition sm:hidden cursor-pointer'
               >
                 <X className='w-5 h-5' />
               </button>
             </div>
           </div>
 
-          <hr className='border-gray-200 dark:border-slate-800 mb-5' />
+          <div className='px-5 mb-4'>
+            <div className='h-[1px] bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent' />
+          </div>
 
           {/* Navigation Items */}
           <MenuItem
@@ -80,63 +87,71 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
           />
 
           {/* Create Post Action Button */}
-          <Link
-            to='/create-post'
-            onClick={() => setsidebarOpen?.(false)}
-            className='flex items-center justify-center gap-2 py-2.5 mt-6 mx-5 sm:mx-6 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 transition text-white font-medium cursor-pointer shadow-sm'
-          >
-            <CirclePlus className='w-5 h-5' />
-            <span>Create Post</span>
-          </Link>
+          <div className='px-5 sm:px-6 mt-6'>
+            <Link
+              to='/create-post'
+              onClick={() => setsidebarOpen?.(false)}
+              className='relative group overflow-hidden flex items-center justify-center gap-2.5 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-95 transition-all duration-200 text-white font-semibold cursor-pointer shadow-lg shadow-indigo-500/25'
+            >
+              <CirclePlus className='w-5 h-5 transition-transform group-hover:rotate-90 duration-300' />
+              <span>Create Post</span>
+              <div className='absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none' />
+            </Link>
+          </div>
         </div>
 
-        {/* Footer Profile & Settings/Logout Bar */}
-        <div className='w-full border-t border-gray-200 dark:border-slate-800 p-4 px-5 sm:px-6 flex items-center justify-between bg-white dark:bg-slate-900'>
-          <div
-            onClick={() => {
-              setIsSettingsOpen(true)
-              setsidebarOpen?.(false)
-            }}
-            className='flex gap-2.5 items-center cursor-pointer min-w-0 flex-1 hover:opacity-80 transition'
-          >
-            <img
-              src={profilePic}
-              alt={displayName}
-              className='w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-slate-700 shadow-xs shrink-0'
-            />
-            <div className='min-w-0'>
-              <h1 className='text-sm font-semibold text-gray-800 dark:text-gray-100 truncate'>
-                {displayName}
-              </h1>
-              <p className='text-xs text-gray-500 dark:text-gray-400 truncate'>
-                @{displayUsername}
-              </p>
-            </div>
-          </div>
-
-          <div className='flex items-center gap-1 shrink-0'>
-            {/* Settings Button */}
-            <button
-              type='button'
+        {/* Footer Profile Glass Chip & Controls */}
+        <div className='w-full p-3 px-4 sm:px-5'>
+          <div className='w-full p-2.5 rounded-2xl glass-card flex items-center justify-between gap-2 shadow-sm border border-slate-200/80 dark:border-white/[0.08] hover:border-indigo-500/40 transition-colors'>
+            <div
               onClick={() => {
-                setIsSettingsOpen(true)
+                navigate('/profile')
                 setsidebarOpen?.(false)
               }}
-              title='Account Settings & Delete'
-              className='p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition cursor-pointer'
+              className='flex gap-2.5 items-center cursor-pointer min-w-0 flex-1 group'
             >
-              <Settings className='w-4 h-4' />
-            </button>
+              <div className='relative'>
+                <img
+                  src={profilePic}
+                  alt={displayName}
+                  className='w-10 h-10 rounded-full object-cover border-2 border-indigo-500/40 shadow-xs shrink-0'
+                />
+                <span className='absolute bottom-0 right-0 size-2.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900' />
+              </div>
+              <div className='min-w-0'>
+                <h1 className='text-sm font-bold text-gray-800 dark:text-gray-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition'>
+                  {displayName}
+                </h1>
+                <p className='text-xs text-gray-500 dark:text-gray-400 truncate font-medium'>
+                  @{displayUsername}
+                </p>
+              </div>
+            </div>
 
-            {/* Quick Sign Out Button */}
-            <button
-              type='button'
-              onClick={handleLogout}
-              title='Sign Out'
-              className='p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition cursor-pointer'
-            >
-              <LogOutIcon className='w-4 h-4' />
-            </button>
+            <div className='flex items-center gap-0.5 shrink-0'>
+              {/* Settings Button */}
+              <button
+                type='button'
+                onClick={() => {
+                  setIsSettingsOpen(true)
+                  setsidebarOpen?.(false)
+                }}
+                title='Account Settings'
+                className='p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer'
+              >
+                <Settings className='w-4 h-4' />
+              </button>
+
+              {/* Quick Sign Out Button */}
+              <button
+                type='button'
+                onClick={handleLogout}
+                title='Sign Out'
+                className='p-2 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer'
+              >
+                <LogOutIcon className='w-4 h-4' />
+              </button>
+            </div>
           </div>
         </div>
       </aside>

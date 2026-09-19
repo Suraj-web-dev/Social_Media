@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
-  Clock,
   MessageSquare,
   Search,
   UserCheck,
@@ -11,6 +10,8 @@ import {
   Plus,
   Settings2,
   ShieldCheck,
+  HeartHandshake,
+  X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
@@ -20,6 +21,7 @@ import {
 } from '../redux/slices/userSlice'
 import { fetchUserCircles } from '../redux/slices/circleSlice'
 import CirclesManagerModal from '../components/CirclesManagerModal'
+import { motion } from 'framer-motion'
 
 const Connections = () => {
   const navigate = useNavigate()
@@ -37,7 +39,6 @@ const Connections = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCirclesModal, setShowCirclesModal] = useState(false)
 
-  // Fetch populated connections & circles on mount
   useEffect(() => {
     dispatch(fetchConnectionsData())
     dispatch(fetchUserCircles())
@@ -48,13 +49,13 @@ const Connections = () => {
   const connectionsList = connectionsData?.connections || []
   const circlesList = circles || []
 
-  const handleFollowToggle = (userId) => {
+  const handleFollowToggle = (userId, e) => {
+    e?.stopPropagation()
     if (userId) {
       dispatch(toggleFollowUser(userId))
     }
   }
 
-  // Stats data mapped with their datasets
   const tabs = [
     {
       id: 'followers',
@@ -62,7 +63,7 @@ const Connections = () => {
       count: followersList.length,
       icon: Users,
       data: followersList,
-      description: 'People who follow your updates and posts',
+      description: 'People who follow your profile and view your stories & posts.',
     },
     {
       id: 'following',
@@ -70,15 +71,15 @@ const Connections = () => {
       count: followingList.length,
       icon: UserCheck,
       data: followingList,
-      description: 'People whose updates appear on your feed',
+      description: 'Creators and friends you are actively subscribed to.',
     },
     {
       id: 'connections',
-      label: 'Connections',
+      label: 'Mutuals',
       count: connectionsList.length,
-      icon: Sparkles,
+      icon: HeartHandshake,
       data: connectionsList,
-      description: 'Mutual connections who follow each other',
+      description: 'Mutual connections who follow you and you follow back.',
     },
     {
       id: 'circles',
@@ -86,239 +87,225 @@ const Connections = () => {
       count: circlesList.length,
       icon: ShieldCheck,
       data: circlesList,
-      description: 'Custom social circles for targeted privacy & posts',
+      description: 'Custom private audience groups for targeted stories & posts.',
     },
   ]
 
-  const activeTabData = tabs.find((tab) => tab.id === activeTab)?.data || []
+  const currentTabInfo = tabs.find((t) => t.id === activeTab)
+  const activeTabData = currentTabInfo?.data || []
 
-  // Filter based on search query
-  const filteredData =
-    activeTab === 'circles'
-      ? circlesList.filter((c) => {
-          const name = (c.name || '').toLowerCase()
-          const query = searchQuery.toLowerCase().trim()
-          return name.includes(query)
-        })
-      : activeTabData.filter((u) => {
-          const name = (u.full_name || '').toLowerCase()
-          const username = (u.username || '').toLowerCase()
-          const query = searchQuery.toLowerCase().trim()
-          return name.includes(query) || username.includes(query)
-        })
+  const filteredData = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim()
+    if (!query) return activeTabData
+
+    if (activeTab === 'circles') {
+      return circlesList.filter((c) => {
+        const name = (c.name || '').toLowerCase()
+        const desc = (c.description || '').toLowerCase()
+        return name.includes(query) || desc.includes(query)
+      })
+    }
+
+    return activeTabData.filter((u) => {
+      const name = (u.full_name || '').toLowerCase()
+      const username = (u.username || '').toLowerCase()
+      const bio = (u.bio || '').toLowerCase()
+      return name.includes(query) || username.includes(query) || bio.includes(query)
+    })
+  }, [activeTab, activeTabData, circlesList, searchQuery])
 
   return (
-    <div className='min-h-full p-4 sm:p-6 lg:p-10 max-w-5xl mx-auto'>
-      {/* Header */}
-      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-        <div>
-          <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100'>
-            Network & Social Circles
+    <div className='w-full max-w-6xl mx-auto p-3 sm:p-5 lg:p-6 space-y-4'>
+      {/* Top Header */}
+      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+        <div className='space-y-0.5'>
+          <div className='inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20'>
+            <ShieldCheck className='w-3 h-3' />
+            <span>NETWORK & AUDIENCES</span>
+          </div>
+          <h1 className='text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight'>
+            Network & Relationships
           </h1>
-          <p className='text-gray-500 dark:text-gray-400 text-sm sm:text-base mt-1'>
-            Manage your followers, mutual connections, and custom audience circles
+          <p className='text-gray-500 dark:text-gray-400 text-xs'>
+            Manage your followers, mutual friends, and custom private circles
           </p>
         </div>
 
-        {/* Action Buttons & Search */}
-        <div className='flex items-center gap-2.5'>
-          {/* Search Input */}
-          <div className='relative w-full sm:w-60'>
-            <Search className='w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2' />
-            <input
-              type='text'
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                activeTab === 'circles'
-                  ? 'Search circles...'
-                  : 'Search people...'
-              }
-              className='w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition'
-            />
-          </div>
+        {/* Action Button: Create Circle */}
+        <button
+          type='button'
+          onClick={() => setShowCirclesModal(true)}
+          className='flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-semibold shadow-xs cursor-pointer active:scale-95 transition shrink-0 self-start sm:self-auto'
+        >
+          <Plus className='w-3.5 h-3.5' />
+          <span>Create Circle</span>
+        </button>
+      </div>
 
-          {/* Manage Circles Quick Button */}
-          <button
-            type='button'
-            onClick={() => setShowCirclesModal(true)}
-            className='flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold transition cursor-pointer shrink-0 shadow-sm'
-          >
-            <Plus className='w-4 h-4' />
-            <span className='hidden sm:inline'>Circles</span>
-          </button>
+      {/* KPI Stats Overview Cards (Compact 4-column) */}
+      <div className='grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3'>
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.id
+          return (
+            <motion.div
+              key={tab.id}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                setActiveTab(tab.id)
+                setSearchQuery('')
+              }}
+              className={`glass-card p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer shadow-xs flex flex-col justify-between gap-2 ${
+                isActive
+                  ? 'border-indigo-500/80 bg-indigo-500/[0.08] dark:bg-indigo-500/[0.12] ring-1 ring-indigo-500/30'
+                  : 'border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20'
+              }`}
+            >
+              <div className='flex items-center justify-between'>
+                <div
+                  className={`size-8 rounded-xl flex items-center justify-center ${
+                    isActive
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 dark:bg-white/[0.06] text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  <Icon className='w-4 h-4' />
+                </div>
+                <span className='text-lg sm:text-xl font-black text-gray-900 dark:text-white'>
+                  {tab.count}
+                </span>
+              </div>
+              <div>
+                <p className='text-xs font-bold text-gray-800 dark:text-gray-200'>
+                  {tab.label}
+                </p>
+                <p className='text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1'>
+                  {tab.id === 'connections' ? 'Follow back' : `Manage ${tab.label.toLowerCase()}`}
+                </p>
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Search Bar & Tab Description */}
+      <div className='glass-card rounded-2xl p-2 shadow-xs border border-slate-200/80 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-2'>
+        <p className='text-[11px] sm:text-xs text-gray-600 dark:text-gray-300 px-2 font-medium'>
+          {currentTabInfo?.description}
+        </p>
+
+        <div className='relative w-full sm:w-64'>
+          <Search className='w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2' />
+          <input
+            type='text'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={
+              activeTab === 'circles'
+                ? 'Search circles...'
+                : `Search ${activeTab}...`
+            }
+            className='w-full pl-8 pr-7 py-1.5 bg-slate-100/90 dark:bg-white/[0.06] rounded-xl text-xs text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500'
+          />
+          {searchQuery && (
+            <button
+              type='button'
+              onClick={() => setSearchQuery('')}
+              className='absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-white'
+            >
+              <X className='w-3 h-3' />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Top Stat Summary Cards */}
-      <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 my-6'>
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-          return (
-            <div
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 shadow-sm border cursor-pointer transition-all duration-200 text-center hover:shadow-md ${
-                isActive
-                  ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-950/10'
-                  : 'border-gray-100 dark:border-slate-800 hover:border-gray-200 dark:hover:border-slate-700'
-              }`}
-            >
-              <div className='flex items-center justify-center mb-1.5'>
-                <Icon
-                  className={`w-5 h-5 ${
-                    isActive
-                      ? 'text-indigo-600 dark:text-indigo-400'
-                      : 'text-gray-400'
-                  }`}
-                />
-              </div>
-              <h3 className='text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100'>
-                {tab.count}
-              </h3>
-              <p className='text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium mt-0.5'>
-                {tab.label}
-              </p>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Filter / Tab Bar */}
-      <div className='flex items-center gap-2 sm:gap-4 border-b border-gray-200 dark:border-slate-800 pb-2 mb-6 overflow-x-auto no-scrollbar'>
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg whitespace-nowrap cursor-pointer transition-all duration-200 ${
-                isActive
-                  ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 rounded-b-none font-semibold'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800'
-              }`}
-            >
-              <Icon
-                className={`w-4 h-4 ${
-                  isActive
-                    ? 'text-indigo-600 dark:text-indigo-400'
-                    : 'text-gray-400'
-                }`}
-              />
-              <span>{tab.label}</span>
-              <span className='px-1.5 py-0.2 bg-gray-100 dark:bg-slate-800 rounded-full text-xs font-semibold text-gray-600 dark:text-gray-300'>
-                {tab.count}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Content Rendering based on Active Tab */}
+      {/* Main Content Area */}
       {activeTab === 'circles' ? (
-        // ================= CIRCLES TAB VIEW =================
-        <div className='space-y-4'>
+        /* CIRCLES GRID VIEW */
+        <div>
           {circlesLoading && circlesList.length === 0 ? (
-            <div className='py-20 flex flex-col items-center justify-center text-indigo-600 gap-3'>
-              <Loader2 className='w-8 h-8 animate-spin' />
-              <p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
+            <div className='py-16 flex flex-col items-center justify-center text-indigo-600 gap-2'>
+              <Loader2 className='w-7 h-7 animate-spin' />
+              <p className='text-xs font-semibold text-gray-500 animate-pulse'>
                 Loading social circles...
               </p>
             </div>
           ) : (
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4'>
               {filteredData.length > 0 ? (
                 filteredData.map((circle) => {
                   const memberCount = circle.members?.length || 0
-                  const memberPreview = (circle.members || []).slice(0, 4)
 
                   return (
-                    <div
+                    <motion.div
                       key={circle._id}
-                      className='bg-white dark:bg-slate-900 rounded-3xl p-5 border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4'
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ y: -2 }}
+                      className='glass-card rounded-2xl p-4 border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-lg transition-all flex flex-col justify-between gap-3'
                     >
-                      {/* Top Info */}
-                      <div className='flex items-start justify-between gap-3'>
+                      <div className='flex items-start justify-between gap-2.5'>
                         <div className='flex items-center gap-3 min-w-0'>
                           <div
-                            className='w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-xs shrink-0'
+                            className='size-11 rounded-xl flex items-center justify-center text-xl shadow-xs shrink-0 border'
                             style={{
-                              backgroundColor: `${circle.color}20`,
-                              color: circle.color,
+                              backgroundColor: `${circle.color || '#6366f1'}15`,
+                              borderColor: `${circle.color || '#6366f1'}35`,
+                              color: circle.color || '#6366f1',
                             }}
                           >
                             {circle.icon || '⭐'}
                           </div>
                           <div className='min-w-0'>
-                            <h3 className='font-bold text-gray-900 dark:text-white text-base truncate'>
+                            <h3 className='font-bold text-gray-900 dark:text-white text-sm truncate'>
                               {circle.name}
                             </h3>
-                            <p className='text-xs text-gray-500 dark:text-gray-400 line-clamp-1'>
-                              {circle.description || 'Custom audience circle'}
+                            <p className='text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5'>
+                              {circle.description || 'Custom privacy group'}
                             </p>
                           </div>
                         </div>
+                      </div>
 
+                      {/* Member Badge & Actions */}
+                      <div className='flex items-center justify-between pt-2.5 border-t border-slate-200/60 dark:border-white/[0.06]'>
                         <span
-                          className='px-3 py-1 rounded-full text-xs font-bold text-white shadow-xs shrink-0'
-                          style={{ backgroundColor: circle.color }}
+                          className='px-2.5 py-0.5 rounded-full text-[11px] font-bold border'
+                          style={{
+                            backgroundColor: `${circle.color || '#6366f1'}12`,
+                            color: circle.color || '#6366f1',
+                            borderColor: `${circle.color || '#6366f1'}35`,
+                          }}
                         >
                           {memberCount} {memberCount === 1 ? 'member' : 'members'}
                         </span>
-                      </div>
 
-                      {/* Members Avatar Stack + Manage Button */}
-                      <div className='flex items-center justify-between pt-3 border-t border-gray-50 dark:border-slate-800/60'>
-                        {/* Avatar Stack */}
-                        <div className='flex items-center -space-x-2'>
-                          {memberPreview.length > 0 ? (
-                            memberPreview.map((m, i) => (
-                              <img
-                                key={m._id || i}
-                                src={
-                                  m.profile_picture || '/sample_profile.jpg'
-                                }
-                                alt={m.full_name || 'Member'}
-                                className='w-8 h-8 rounded-full object-cover border-2 border-white dark:border-slate-900 shadow-xs'
-                              />
-                            ))
-                          ) : (
-                            <span className='text-xs text-gray-400 italic'>
-                              No members yet
-                            </span>
-                          )}
-                          {memberCount > 4 && (
-                            <div className='w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300'>
-                              +{memberCount - 4}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Manage Members Button */}
                         <button
                           type='button'
                           onClick={() => setShowCirclesModal(true)}
-                          className='flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-semibold transition cursor-pointer'
+                          className='flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer'
                         >
-                          <Settings2 className='w-3.5 h-3.5' />
-                          <span>Manage</span>
+                          <Settings2 className='w-3 h-3' />
+                          <span>Configure</span>
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   )
                 })
               ) : (
-                <div className='col-span-full text-center py-16 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 space-y-3'>
-                  <ShieldCheck className='w-10 h-10 text-gray-400 mx-auto' />
-                  <p className='text-gray-800 dark:text-gray-200 font-semibold text-sm'>
-                    No Circles Found
+                <div className='col-span-full text-center py-12 glass-card rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-2'>
+                  <ShieldCheck className='w-8 h-8 text-indigo-500 mx-auto' />
+                  <h3 className='font-bold text-gray-900 dark:text-white text-xs sm:text-sm'>
+                    No Circles Created Yet
+                  </h3>
+                  <p className='text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed'>
+                    Create custom circles (e.g. Besties, Study Squad) to share targeted stories exclusively.
                   </p>
                   <button
                     type='button'
                     onClick={() => setShowCirclesModal(true)}
-                    className='px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition cursor-pointer'
+                    className='px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-semibold hover:opacity-90 transition cursor-pointer'
                   >
                     Create Your First Circle
                   </button>
@@ -328,126 +315,136 @@ const Connections = () => {
           )}
         </div>
       ) : (
-        // ================= USERS TAB VIEW (Followers, Following, Connections) =================
+        /* USERS LIST VIEW (Followers, Following, Mutuals) */
         <div>
           {connectionsLoading && filteredData.length === 0 ? (
-            <div className='py-20 flex flex-col items-center justify-center text-indigo-600 gap-3'>
-              <Loader2 className='w-8 h-8 animate-spin' />
-              <p className='text-sm font-medium text-gray-500 dark:text-gray-400'>
+            <div className='py-16 flex flex-col items-center justify-center text-indigo-600 gap-2'>
+              <Loader2 className='w-7 h-7 animate-spin' />
+              <p className='text-xs font-semibold text-gray-500 animate-pulse'>
                 Loading network...
               </p>
             </div>
           ) : (
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4'>
               {filteredData.length > 0 ? (
                 filteredData.map((userObj, idx) => {
                   const userId = userObj._id || userObj
-                  const userName = userObj.full_name || 'User'
+                  const userName = userObj.full_name || 'Creator'
                   const userUsername = userObj.username || 'user'
-                  const userPic =
-                    userObj.profile_picture || '/sample_profile.jpg'
+                  const userPic = userObj.profile_picture || '/sample_profile.jpg'
                   const userBio = userObj.bio || ''
 
                   const isFollowing = (currentUser?.following || []).some(
-                    (id) =>
-                      (typeof id === 'object'
-                        ? id._id.toString()
-                        : id.toString()) === userId.toString()
+                    (id) => (typeof id === 'object' ? id._id : id)?.toString() === userId.toString()
+                  )
+
+                  const isMutual = connectionsList.some(
+                    (c) => (c._id || c)?.toString() === userId.toString()
                   )
 
                   return (
-                    <div
+                    <motion.div
                       key={userId || idx}
-                      className='bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 p-5 border border-gray-100 dark:border-slate-800 flex flex-col justify-between gap-4'
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: idx * 0.02 }}
+                      whileHover={{ y: -2 }}
+                      onClick={() => navigate(`/profile/${userId}`)}
+                      className='glass-card rounded-2xl p-3.5 border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-lg hover:border-indigo-500/30 transition-all flex flex-col justify-between gap-3 cursor-pointer group'
                     >
-                      {/* User Details */}
-                      <div className='flex items-start gap-3.5'>
-                        <img
-                          src={userPic}
-                          alt={userName}
-                          loading='lazy'
-                          decoding='async'
-                          onClick={() => navigate(`/profile/${userId}`)}
-                          className='w-13 h-13 rounded-full object-cover shrink-0 border border-gray-100 dark:border-slate-800 shadow-xs cursor-pointer hover:opacity-90 transition'
-                        />
+                      <div className='flex items-start gap-3'>
+                        <div className='relative shrink-0'>
+                          <img
+                            src={userPic}
+                            alt={userName}
+                            loading='lazy'
+                            decoding='async'
+                            className='size-11 sm:size-12 rounded-full object-cover border-2 border-indigo-500/30 shadow-xs group-hover:scale-105 transition-transform'
+                          />
+                          <span className='absolute bottom-0 right-0 size-2.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900' />
+                        </div>
+
                         <div className='flex-1 min-w-0'>
-                          <h4
-                            className='font-semibold text-gray-900 dark:text-gray-100 text-base leading-snug hover:text-indigo-600 dark:hover:text-indigo-400 transition truncate cursor-pointer'
-                            onClick={() => navigate(`/profile/${userId}`)}
-                          >
-                            {userName}
-                          </h4>
-                          <p className='text-xs text-gray-500 dark:text-gray-400 font-medium'>
+                          <div className='flex items-center gap-1.5'>
+                            <h4 className='font-bold text-gray-900 dark:text-gray-100 text-xs sm:text-sm hover:text-indigo-600 dark:hover:text-indigo-400 transition truncate'>
+                              {userName}
+                            </h4>
+                            {isMutual && (
+                              <span
+                                className='px-1.5 py-0.2 text-[9px] font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/25 rounded-full shrink-0'
+                                title='Mutual Connection'
+                              >
+                                Mutual
+                              </span>
+                            )}
+                          </div>
+                          <p className='text-[11px] text-gray-500 dark:text-gray-400 font-medium'>
                             @{userUsername}
                           </p>
-                          {userBio && (
-                            <p className='text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-1 leading-relaxed'>
-                              {userBio}
-                            </p>
-                          )}
+
+                          <p className='text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 line-clamp-1 leading-snug'>
+                            {userBio || 'PingUp Member'}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className='flex items-center gap-2 pt-1 border-t border-gray-50 dark:border-slate-800/60'>
+                      {/* Card Action Buttons */}
+                      <div className='flex items-center gap-1.5 pt-2 border-t border-slate-200/60 dark:border-white/[0.06]'>
                         <button
                           type='button'
-                          onClick={() => handleFollowToggle(userId)}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs sm:text-sm font-medium transition cursor-pointer shadow-xs ${
+                          onClick={(e) => handleFollowToggle(userId, e)}
+                          className={`flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 ${
                             isFollowing
-                              ? 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700'
-                              : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white'
+                              ? 'bg-slate-100 dark:bg-white/[0.08] text-gray-700 dark:text-gray-200 hover:bg-slate-200'
+                              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white'
                           }`}
                         >
                           {isFollowing ? (
                             <>
-                              <UserCheck className='w-4 h-4' />
+                              <UserCheck className='w-3 h-3' />
                               <span>Following</span>
                             </>
                           ) : (
                             <>
-                              <UserPlus className='w-4 h-4' />
-                              <span>Follow Back</span>
+                              <UserPlus className='w-3 h-3' />
+                              <span>{activeTab === 'followers' ? 'Follow Back' : 'Follow'}</span>
                             </>
                           )}
-                        </button>
-
-                        <button
-                          type='button'
-                          onClick={() => navigate(`/profile/${userId}`)}
-                          className='px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer transition'
-                        >
-                          Profile
                         </button>
 
                         <button
                           type='button'
                           title='Send Message'
-                          onClick={() => navigate(`/messages/${userId}`)}
-                          className='p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 hover:text-indigo-600 text-gray-600 dark:text-gray-300 cursor-pointer transition shadow-xs'
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/messages/${userId}`)
+                          }}
+                          className='p-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 hover:border-indigo-400 hover:text-indigo-600 text-gray-600 dark:text-gray-300 cursor-pointer transition'
                         >
-                          <MessageSquare className='w-4 h-4' />
+                          <MessageSquare className='w-3.5 h-3.5' />
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   )
                 })
               ) : (
-                <div className='col-span-full text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 space-y-2'>
+                <div className='col-span-full text-center py-12 glass-card rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-2'>
                   <Users className='w-8 h-8 text-gray-400 mx-auto' />
-                  <p className='text-gray-800 dark:text-gray-200 font-semibold text-sm'>
+                  <p className='text-gray-900 dark:text-gray-100 font-bold text-xs sm:text-sm'>
                     {searchQuery
-                      ? `No people matching "${searchQuery}"`
+                      ? `No results matching "${searchQuery}"`
                       : `No ${activeTab} yet`}
                   </p>
-                  <p className='text-gray-500 dark:text-gray-400 text-xs max-w-sm mx-auto'>
-                    {activeTab === 'followers' &&
-                      'When people follow your profile, they will appear here.'}
-                    {activeTab === 'following' &&
-                      'Follow more people from the Discover tab to build your feed.'}
-                    {activeTab === 'connections' &&
-                      'Mutual connections (people who follow each other) will appear here.'}
+                  <p className='text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto'>
+                    Connect with creators to expand your network!
                   </p>
+                  <button
+                    type='button'
+                    onClick={() => navigate('/discover')}
+                    className='mt-1 px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition cursor-pointer'
+                  >
+                    Explore Creators
+                  </button>
                 </div>
               )}
             </div>
@@ -455,7 +452,7 @@ const Connections = () => {
         </div>
       )}
 
-      {/* Circles Manager Modal */}
+      {/* Circle Manager Modal */}
       <CirclesManagerModal
         isOpen={showCirclesModal}
         onClose={() => setShowCirclesModal(false)}

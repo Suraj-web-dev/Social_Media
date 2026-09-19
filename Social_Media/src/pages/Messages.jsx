@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Eye, MessageSquare, Search } from 'lucide-react'
+import { Eye, MessageSquare, Search, Sparkles, UserPlus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchDiscoverUsers } from '../redux/slices/userSlice'
 import { fetchRecentConversations } from '../redux/slices/messageSlice'
 import moment from 'moment'
+import { motion } from 'framer-motion'
 
 const Messages = () => {
   const navigate = useNavigate()
@@ -38,7 +39,6 @@ const Messages = () => {
       self.findIndex((u) => u._id === user._id) === index
   )
 
-  // Filter conversations & contacts based on search
   const filteredConversations = (conversations || []).filter((conv) => {
     const u = conv.user || {}
     const name = (u.full_name || '').toLowerCase()
@@ -55,156 +55,189 @@ const Messages = () => {
   })
 
   return (
-    <div className='min-h-full p-4 sm:p-6 lg:p-10 max-w-4xl mx-auto'>
-      {/* Header */}
-      <div className='mb-6'>
-        <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100'>
-          Messages & Chats
-        </h1>
-        <p className='text-gray-500 dark:text-gray-400 text-sm sm:text-base mt-1'>
-          Connect and chat with your friends in real-time
-        </p>
+    <div className='w-full max-w-6xl mx-auto p-3 sm:p-5 lg:p-6 pb-24 space-y-6'>
+      {/* Header & Search */}
+      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+        <div>
+          <div className='inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 mb-2'>
+            <MessageSquare className='w-3.5 h-3.5' />
+            <span>REAL-TIME DIRECT CHAT</span>
+          </div>
+          <h1 className='text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight'>
+            Direct Messages
+          </h1>
+          <p className='text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5'>
+            Chat, share media and connect instantly with your friends
+          </p>
+        </div>
+
+        {/* Search Bar */}
+        <div className='relative w-full sm:w-80'>
+          <Search className='w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2' />
+          <input
+            type='text'
+            placeholder='Search chats or people...'
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className='w-full pl-10 pr-4 py-2.5 glass-card rounded-2xl text-xs sm:text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 border border-slate-200/80 dark:border-white/10 transition shadow-xs'
+          />
+        </div>
       </div>
 
-      {/* Search Bar */}
-      <div className='relative mb-6 max-w-xl'>
-        <Search className='w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2' />
-        <input
-          type='text'
-          placeholder='Search conversations or people...'
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className='w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs'
-        />
-      </div>
-
-      {/* Conversations List */}
-      <div className='space-y-3 max-w-xl'>
-        {filteredConversations.length > 0 && (
-          <div className='space-y-2.5'>
-            <h3 className='text-xs font-bold uppercase tracking-wider text-gray-400 px-1'>
-              Active Chats
+      {/* 2-Column Responsive Workspace */}
+      <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
+        {/* Left Column: Active Chats (7 cols) */}
+        <div className='lg:col-span-7 space-y-3'>
+          <div className='flex items-center justify-between px-1'>
+            <h3 className='text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500'>
+              Active Conversations ({filteredConversations.length})
             </h3>
-            {filteredConversations.map((conv) => {
-              const user = conv.user || {}
-              const lastMsg = conv.lastMessage || {}
-              const unreadCount = conv.unreadCount || 0
-              const isOnline = onlineUsers.includes(user._id?.toString())
+          </div>
 
-              return (
-                <div
-                  key={user._id}
-                  onClick={() => navigate(`/messages/${user._id}`)}
-                  className='bg-white dark:bg-slate-900 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 p-4 border border-gray-100 dark:border-slate-800 flex items-center justify-between gap-3 cursor-pointer group'
-                >
-                  {/* User Avatar & Info */}
-                  <div className='flex items-center gap-3.5 flex-1 min-w-0'>
-                    <div className='relative shrink-0'>
-                      <img
-                        src={user.profile_picture || '/sample_profile.jpg'}
-                        alt={user.full_name}
-                        className='w-12 h-12 rounded-full object-cover border border-gray-100 dark:border-slate-700 shadow-xs'
-                      />
-                      {isOnline && (
-                        <span className='absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full' />
-                      )}
-                    </div>
-                    <div className='flex-1 min-w-0'>
-                      <div className='flex items-center justify-between'>
-                        <h3 className='font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate'>
-                          {user.full_name || 'User'}
-                        </h3>
-                        {lastMsg.createdAt && (
-                          <span className='text-[11px] text-gray-400 shrink-0 ml-2'>
-                            {moment(lastMsg.createdAt).fromNow(true)}
-                          </span>
+          <div className='space-y-2.5'>
+            {filteredConversations.length > 0 ? (
+              filteredConversations.map((conv) => {
+                const user = conv.user || {}
+                const lastMsg = conv.lastMessage || {}
+                const unreadCount = conv.unreadCount || 0
+                const isOnline = onlineUsers.includes(user._id?.toString())
+
+                return (
+                  <motion.div
+                    key={user._id}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={() => navigate(`/messages/${user._id}`)}
+                    className='glass-card rounded-3xl p-4 border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-md hover:border-indigo-500/40 transition-all flex items-center justify-between gap-3.5 cursor-pointer group'
+                  >
+                    {/* User Avatar & Info */}
+                    <div className='flex items-center gap-3.5 flex-1 min-w-0'>
+                      <div className='relative shrink-0'>
+                        <img
+                          src={user.profile_picture || '/sample_profile.jpg'}
+                          alt={user.full_name}
+                          loading='lazy'
+                          decoding='async'
+                          className='w-12 h-12 rounded-full object-cover border-2 border-indigo-500/30 shadow-xs'
+                        />
+                        {isOnline && (
+                          <span className='absolute bottom-0 right-0 size-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full ring-1 ring-emerald-500/40' />
                         )}
                       </div>
-                      <p className={`text-xs truncate mt-0.5 ${unreadCount > 0 ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}>
-                        {lastMsg.message_type === 'image'
-                          ? '📷 Photo'
-                          : lastMsg.text || `@${user.username}`}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* WhatsApp-Style Unread Counter Badge */}
-                  {unreadCount > 0 && (
-                    <div className='shrink-0 flex items-center justify-center min-w-5.5 h-5.5 px-1.5 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-xs animate-pulse'>
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                      <div className='flex-1 min-w-0'>
+                        <div className='flex items-center justify-between'>
+                          <h4 className='font-bold text-gray-900 dark:text-gray-100 text-sm sm:text-base leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate'>
+                            {user.full_name || 'User'}
+                          </h4>
+                          {lastMsg.createdAt && (
+                            <span className='text-[11px] text-gray-400 shrink-0 ml-2 font-medium'>
+                              {moment(lastMsg.createdAt).fromNow(true)}
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          className={`text-xs truncate mt-0.5 ${
+                            unreadCount > 0
+                              ? 'font-bold text-gray-900 dark:text-gray-100'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}
+                        >
+                          {lastMsg.message_type === 'image'
+                            ? '📷 Photo'
+                            : lastMsg.text || `@${user.username}`}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              )
-            })}
+
+                    {/* Unread Counter Badge */}
+                    {unreadCount > 0 && (
+                      <div className='shrink-0 flex items-center justify-center min-w-5.5 h-5.5 px-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[11px] font-bold rounded-full shadow-xs animate-pulse'>
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </div>
+                    )}
+                  </motion.div>
+                )
+              })
+            ) : (
+              <div className='glass-card rounded-3xl p-10 text-center border border-slate-200/80 dark:border-white/[0.08] space-y-2'>
+                <MessageSquare className='w-8 h-8 text-indigo-500/60 mx-auto' />
+                <p className='text-sm font-bold text-gray-900 dark:text-white'>
+                  No active conversations yet
+                </p>
+                <p className='text-xs text-gray-500 dark:text-gray-400 max-w-xs mx-auto'>
+                  Pick a creator from your network on the right to start your first chat!
+                </p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Other Suggested Contacts */}
-        {filteredOtherContacts.length > 0 && (
-          <div className='space-y-2.5 pt-4'>
-            <h3 className='text-xs font-bold uppercase tracking-wider text-gray-400 px-1'>
-              Start a New Conversation
+        {/* Right Column: Start New Chat with Contacts (5 cols) */}
+        <div className='lg:col-span-5 space-y-3'>
+          <div className='flex items-center justify-between px-1'>
+            <h3 className='text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500'>
+              Start New Chat ({filteredOtherContacts.length})
             </h3>
-            {filteredOtherContacts.map((user) => {
-              const isOnline = onlineUsers.includes(user._id?.toString())
-              return (
-                <div
-                  key={user._id}
-                  className='bg-white dark:bg-slate-900 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 p-4 border border-gray-100 dark:border-slate-800 flex items-center justify-between gap-4'
-                >
-                  <div
-                    onClick={() => navigate(`/messages/${user._id}`)}
-                    className='flex items-center gap-3.5 cursor-pointer flex-1 min-w-0'
-                  >
-                    <div className='relative shrink-0'>
-                      <img
-                        src={user.profile_picture || '/sample_profile.jpg'}
-                        alt={user.full_name}
-                        className='w-11 h-11 rounded-full object-cover border border-gray-100 dark:border-slate-700 shadow-xs'
-                      />
-                      {isOnline && (
-                        <span className='absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full' />
-                      )}
-                    </div>
-                    <div className='flex-1 min-w-0'>
-                      <h3 className='font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug hover:text-indigo-600 dark:hover:text-indigo-400 transition truncate'>
-                        {user.full_name}
-                      </h3>
-                      <p className='text-xs text-gray-500 dark:text-gray-400 font-medium'>
-                        @{user.username}
-                      </p>
-                    </div>
-                  </div>
+          </div>
 
-                  <div className='flex items-center gap-2 shrink-0'>
+          <div className='space-y-2.5 max-h-[600px] overflow-y-auto no-scrollbar'>
+            {filteredOtherContacts.length > 0 ? (
+              filteredOtherContacts.map((contact) => {
+                const isOnline = onlineUsers.includes(contact._id?.toString())
+
+                return (
+                  <motion.div
+                    key={contact._id}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={() => navigate(`/messages/${contact._id}`)}
+                    className='glass-card rounded-2xl p-3.5 border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:border-indigo-500/40 transition-all flex items-center justify-between gap-3 cursor-pointer group'
+                  >
+                    <div className='flex items-center gap-3 min-w-0'>
+                      <div className='relative shrink-0'>
+                        <img
+                          src={contact.profile_picture || '/sample_profile.jpg'}
+                          alt={contact.full_name}
+                          loading='lazy'
+                          decoding='async'
+                          className='w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700'
+                        />
+                        {isOnline && (
+                          <span className='absolute bottom-0 right-0 size-2.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900' />
+                        )}
+                      </div>
+                      <div className='min-w-0'>
+                        <h4 className='font-bold text-gray-900 dark:text-gray-100 text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate'>
+                          {contact.full_name}
+                        </h4>
+                        <p className='text-[11px] text-gray-500 dark:text-gray-400 truncate'>
+                          @{contact.username}
+                        </p>
+                      </div>
+                    </div>
+
                     <button
-                      title='Start Chat'
-                      onClick={() => navigate(`/messages/${user._id}`)}
-                      className='p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 hover:text-indigo-600 text-gray-600 dark:text-gray-300 cursor-pointer transition shadow-xs'
+                      type='button'
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate(`/messages/${contact._id}`)
+                      }}
+                      className='p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white transition cursor-pointer shrink-0'
+                      title='Message'
                     >
                       <MessageSquare className='w-4 h-4' />
                     </button>
-                    <button
-                      title='View Profile'
-                      onClick={() => navigate(`/profile/${user._id}`)}
-                      className='p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 hover:text-indigo-600 text-gray-600 dark:text-gray-300 cursor-pointer transition shadow-xs'
-                    >
-                      <Eye className='w-4 h-4' />
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+                  </motion.div>
+                )
+              })
+            ) : (
+              <div className='glass-card rounded-2xl p-8 text-center border border-slate-200/80 dark:border-white/[0.08] text-xs text-gray-500 dark:text-gray-400'>
+                No contacts matching "{searchTerm}"
+              </div>
+            )}
           </div>
-        )}
-
-        {filteredConversations.length === 0 &&
-          filteredOtherContacts.length === 0 && (
-            <div className='text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 text-gray-500 dark:text-gray-400 text-sm'>
-              No conversations found
-            </div>
-          )}
+        </div>
       </div>
     </div>
   )

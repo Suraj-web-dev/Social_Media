@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react'
-import { Plus, Sparkles, Layers } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchFeedStories } from '../redux/slices/storySlice'
 import StoryModal from './StoryModal'
@@ -8,45 +8,71 @@ import Storyviewers from './Storyviewers'
 
 const StoriesBar = () => {
   const dispatch = useDispatch()
+  const scrollRef = useRef(null)
   const { user: currentUser } = useSelector((state) => state.auth)
   const { stories } = useSelector((state) => state.story)
 
   const [showModal, setShowModal] = useState(false)
-  const [activeViewerData, setActiveViewerData] = useState(null) // { userGroups, initialUserIndex }
+  const [activeViewerData, setActiveViewerData] = useState(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
 
   useEffect(() => {
     dispatch(fetchFeedStories())
   }, [dispatch])
 
-  // Group multiple stories by user (Instagram-style grouping)
+  // Group stories by creator and evaluate seen vs unseen status
   const { myStoryGroup, otherStoryGroups, allUserGroups } = useMemo(() => {
     const map = new Map()
     const currentId = currentUser?._id?.toString()
 
+    const now = Date.now()
+
     stories.forEach((story) => {
+      // Check 24-hour expiration
+      if (story.createdAt) {
+        const diff = now - new Date(story.createdAt).getTime()
+        if (diff > 24 * 60 * 60 * 1000) return
+      }
+
       const userObj = story.user
-      if (!userObj || !userObj._id) return
-      const uid = userObj._id.toString()
+      if (!userObj) return
+      const uid = (typeof userObj === 'object' && userObj?._id ? userObj._id : userObj)?.toString()
+      if (!uid) return
 
       if (!map.has(uid)) {
         map.set(uid, {
-          user: userObj,
+          user: typeof userObj === 'object' ? userObj : { _id: uid },
           stories: [],
           latestStory: story,
+          hasUnseen: false,
         })
       }
-      map.get(uid).stories.push(story)
+      const group = map.get(uid)
+      group.stories.push(story)
+
+      // Check if current user has viewed this specific story
+      const isViewed = story.views?.some((v) => {
+        const viewerId = v.user?._id || v.user || v
+        return viewerId?.toString() === currentId
+      })
+
+      if (!isViewed && uid !== currentId) {
+        group.hasUnseen = true
+      }
     })
 
     const groups = Array.from(map.values())
     const myGroup = groups.find(
-      (g) => g.user._id?.toString() === currentId
+      (g) => (g.user._id || g.user)?.toString() === currentId
     ) || null
     const others = groups.filter(
-      (g) => g.user._id?.toString() !== currentId
+      (g) => (g.user._id || g.user)?.toString() !== currentId
     )
 
-    // Ordered list with logged-in user's active story first if present
+    // Sort others: unviewed stories first, then viewed
+    others.sort((a, b) => (b.hasUnseen ? 1 : 0) - (a.hasUnseen ? 1 : 0))
+
     const allOrdered = myGroup ? [myGroup, ...others] : others
 
     return {
@@ -58,12 +84,41 @@ const StoriesBar = () => {
 
   const userAvatar = currentUser?.profile_picture || '/sample_profile.jpg'
 
+  // Check scroll buttons visibility
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current
+      setCanScrollLeft(scrollLeft > 10)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10)
+    }
+  }
+
+  useEffect(() => {
+    checkScroll()
+    const container = scrollRef.current
+    if (container) {
+      container.addEventListener('scroll', checkScroll)
+      window.addEventListener('resize', checkScroll)
+    }
+    return () => {
+      if (container) container.removeEventListener('scroll', checkScroll)
+      window.removeEventListener('resize', checkScroll)
+    }
+  }, [stories.length])
+
+  const handleScroll = (direction) => {
+    if (scrollRef.current) {
+      const offset = direction === 'left' ? -280 : 280
+      scrollRef.current.scrollBy({ left: offset, behavior: 'smooth' })
+    }
+  }
+
   const handleOpenMyStories = (e) => {
     e?.stopPropagation()
     if (myStoryGroup && myStoryGroup.stories.length > 0) {
       setActiveViewerData({
         userGroups: allUserGroups,
-        initialUserIndex: 0, // My story is at index 0 in allUserGroups
+        initialUserIndex: 0,
       })
     } else {
       setShowModal(true)
@@ -72,7 +127,7 @@ const StoriesBar = () => {
 
   const handleOpenOtherUserStories = (targetGroup) => {
     const groupIndex = allUserGroups.findIndex(
-      (g) => g.user._id?.toString() === targetGroup.user._id?.toString()
+      (g) => (g.user._id || g.user)?.toString() === (targetGroup.user._id || targetGroup.user)?.toString()
     )
     setActiveViewerData({
       userGroups: allUserGroups,
@@ -81,207 +136,172 @@ const StoriesBar = () => {
   }
 
   return (
-    <div className='w-screen sm:w-[calc(100vw-240px)] lg:max-w-2xl no-scrollbar overflow-x-auto px-4 py-2'>
-      <div className='flex items-center gap-3'>
-        {/* ================= 1. CURRENT USER STORY CARD ================= */}
-        {myStoryGroup && myStoryGroup.stories.length > 0 ? (
-          // Logged-in user HAS active stories
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={handleOpenMyStories}
-            className='relative rounded-3xl shadow-xs min-w-28 max-w-28 h-40 shrink-0 cursor-pointer hover:shadow-lg overflow-hidden border border-gray-100 dark:border-slate-800 group transition-all'
-            style={{
-              backgroundColor:
-                myStoryGroup.latestStory.media_type === 'text'
-                  ? myStoryGroup.latestStory.background_color || '#4f46e5'
-                  : '#0f172a',
-            }}
-          >
-            {/* Story Thumbnail / Media */}
-            {myStoryGroup.latestStory.media_type === 'image' &&
-            myStoryGroup.latestStory.media_url ? (
-              <img
-                src={myStoryGroup.latestStory.media_url}
-                alt=''
-                loading='lazy'
-                decoding='async'
-                className='absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
-              />
-            ) : myStoryGroup.latestStory.media_type === 'video' &&
-              myStoryGroup.latestStory.media_url ? (
-              <video
-                src={myStoryGroup.latestStory.media_url}
-                className='absolute inset-0 w-full h-full object-cover'
-                muted
-              />
-            ) : null}
+    <div className='relative w-full group/tray select-none py-2 px-1'>
+      {/* Left Scroll Button (Desktop) */}
+      {canScrollLeft && (
+        <button
+          type='button'
+          onClick={() => handleScroll('left')}
+          className='hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 size-7 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 rounded-full shadow-md border border-slate-200 dark:border-slate-800 items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all duration-150'
+          aria-label='Scroll left'
+        >
+          <ChevronLeft className='w-4 h-4' />
+        </button>
+      )}
 
-            {/* Dark Vignette Overlay */}
-            <div className='absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80 pointer-events-none' />
+      {/* Right Scroll Button (Desktop) */}
+      {canScrollRight && (
+        <button
+          type='button'
+          onClick={() => handleScroll('right')}
+          className='hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 size-7 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 rounded-full shadow-md border border-slate-200 dark:border-slate-800 items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all duration-150'
+          aria-label='Scroll right'
+        >
+          <ChevronRight className='w-4 h-4' />
+        </button>
+      )}
 
-            {/* Story Avatar with Instagram Gradient Ring */}
-            <div className='absolute top-2.5 left-2.5 z-10'>
-              <div className='p-0.5 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 shadow-md'>
-                <img
-                  src={userAvatar}
-                  alt='Your Story'
-                  loading='lazy'
-                  decoding='async'
-                  className='size-7 rounded-full object-cover border-2 border-white dark:border-slate-900'
-                />
-              </div>
-            </div>
+      {/* Horizontal Story Tray */}
+      <div
+        ref={scrollRef}
+        className='flex items-center gap-3.5 sm:gap-4.5 overflow-x-auto no-scrollbar scroll-smooth px-2 py-1'
+      >
+        {/* ================= 1. LOGGED-IN USER STORY ================= */}
+        <div className='flex flex-col items-center shrink-0 cursor-pointer group'>
+          {myStoryGroup && myStoryGroup.stories.length > 0 ? (
+            /* User HAS active stories -> Instagram gradient ring */
+            <div className='relative' onClick={handleOpenMyStories}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.94 }}
+                className='p-[2.5px] rounded-full bg-[linear-gradient(45deg,#f09433_0%,#e6683c_25%,#dc2743_50%,#cc2366_75%,#bc1888_100%)] shadow-xs'
+              >
+                <div className='p-[2px] rounded-full bg-white dark:bg-[#0B0F19]'>
+                  <img
+                    src={userAvatar}
+                    alt='Your story'
+                    loading='lazy'
+                    decoding='async'
+                    className='size-14 sm:size-16 rounded-full object-cover'
+                  />
+                </div>
+              </motion.div>
 
-            {/* Multiple Stories Badge Counter */}
-            {myStoryGroup.stories.length > 1 && (
-              <div className='absolute top-2.5 right-2.5 z-10 px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 shadow-sm'>
-                <Layers className='w-2.5 h-2.5 text-indigo-400' />
-                <span>{myStoryGroup.stories.length}</span>
-              </div>
-            )}
-
-            {/* Text Preview if text story */}
-            {myStoryGroup.latestStory.content && (
-              <p className='absolute top-12 left-2.5 right-2.5 z-10 text-white text-xs font-medium line-clamp-3 leading-tight drop-shadow-sm'>
-                {myStoryGroup.latestStory.content}
-              </p>
-            )}
-
-            {/* Bottom Label + Quick Add Button */}
-            <div className='absolute bottom-2 left-2.5 right-2.5 z-10 flex items-center justify-between'>
-              <p className='text-white text-[11px] font-bold truncate drop-shadow-xs'>
-                Your Story
-              </p>
+              {/* Plus Badge to Add Another Story */}
               <button
                 type='button'
                 onClick={(e) => {
                   e.stopPropagation()
                   setShowModal(true)
                 }}
-                className='size-5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-md cursor-pointer border border-white/80 transition-transform active:scale-90'
+                className='absolute -bottom-0.5 -right-0.5 size-5 sm:size-5.5 rounded-full bg-blue-600 text-white flex items-center justify-center border-2 border-white dark:border-[#0B0F19] shadow-xs cursor-pointer hover:scale-115 active:scale-95 transition-transform'
                 title='Add another story'
               >
-                <Plus className='w-3 h-3' />
+                <Plus className='w-3 h-3 stroke-[3]' />
               </button>
             </div>
-          </motion.div>
-        ) : (
-          // Logged-in user has NO active stories -> Show Create Story card
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.96 }}
-            onClick={() => setShowModal(true)}
-            className='relative rounded-3xl shadow-xs min-w-28 max-w-28 h-40 shrink-0 cursor-pointer hover:shadow-md border-2 border-dashed border-indigo-300 dark:border-indigo-800 bg-gradient-to-b from-indigo-50/70 to-white dark:from-slate-800/80 dark:to-slate-900 flex flex-col items-center justify-between p-3 overflow-hidden group transition-colors'
-          >
-            <div className='relative mt-2'>
-              <img
-                src={userAvatar}
-                alt='You'
-                className='w-12 h-12 rounded-full object-cover border-2 border-indigo-500 shadow-xs'
-              />
-              <div className='absolute -bottom-1 -right-1 size-5 bg-indigo-600 rounded-full flex items-center justify-center shadow-xs border-2 border-white dark:border-slate-900 text-white'>
-                <Plus className='w-3 h-3' />
+          ) : (
+            /* User has NO active story */
+            <div className='relative' onClick={() => setShowModal(true)}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.94 }}
+                className='p-[2px] rounded-full border border-slate-300 dark:border-slate-700 hover:border-blue-500 transition-colors'
+              >
+                <img
+                  src={userAvatar}
+                  alt='Your story'
+                  loading='lazy'
+                  decoding='async'
+                  className='size-14 sm:size-16 rounded-full object-cover'
+                />
+              </motion.div>
+
+              {/* Blue Plus Icon Badge */}
+              <div className='absolute -bottom-0.5 -right-0.5 size-5 sm:size-5.5 rounded-full bg-blue-500 text-white flex items-center justify-center border-2 border-white dark:border-[#0B0F19] shadow-xs'>
+                <Plus className='w-3 h-3 stroke-[3]' />
               </div>
             </div>
-            <p className='text-xs font-semibold text-gray-700 dark:text-gray-200 text-center mb-1'>
-              Create Story
-            </p>
-          </motion.div>
-        )}
+          )}
 
-        {/* ================= 2. OTHER USERS' GROUPED STORY CARDS ================= */}
+          <span className='text-[11px] sm:text-[12px] text-gray-800 dark:text-gray-200 mt-1.5 truncate max-w-[68px] sm:max-w-[76px] text-center font-normal tracking-tight'>
+            Your story
+          </span>
+        </div>
+
+        {/* ================= 2. OTHER CREATORS' STORIES ================= */}
         {otherStoryGroups.map((group, idx) => {
           const author = group.user || {}
           const authorPic = author.profile_picture || '/sample_profile.jpg'
-          const authorName = author.full_name || 'Story'
-          const latestStory = group.latestStory || {}
-          const storyCount = group.stories.length
+          const username = author.username || author.full_name || 'creator'
+          const hasCircleStory = group.stories.some(
+            (s) => s.target_circle === 'close_friends'
+          )
+          const hasUnseen = group.hasUnseen
 
           return (
             <motion.div
               key={author._id || idx}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.25, delay: idx * 0.04 }}
-              whileHover={{ scale: 1.04, y: -2 }}
-              whileTap={{ scale: 0.96 }}
+              transition={{ duration: 0.2, delay: idx * 0.02 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.94 }}
               onClick={() => handleOpenOtherUserStories(group)}
-              className='relative rounded-3xl shadow-xs min-w-28 max-w-28 h-40 shrink-0 cursor-pointer hover:shadow-lg overflow-hidden border border-gray-100 dark:border-slate-800 group transition-all'
-              style={{
-                backgroundColor:
-                  latestStory.media_type === 'text'
-                    ? latestStory.background_color || '#4f46e5'
-                    : '#0f172a',
-              }}
+              className='flex flex-col items-center shrink-0 cursor-pointer group'
             >
-              {/* Media Preview (Image / Video) */}
-              {latestStory.media_type === 'image' && latestStory.media_url ? (
-                <img
-                  src={latestStory.media_url}
-                  alt=''
-                  loading='lazy'
-                  decoding='async'
-                  className='absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
-                />
-              ) : latestStory.media_type === 'video' &&
-                latestStory.media_url ? (
-                <video
-                  src={latestStory.media_url}
-                  className='absolute inset-0 w-full h-full object-cover'
-                  muted
-                />
-              ) : null}
-
-              {/* Dark Vignette Overlay */}
-              <div className='absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80 pointer-events-none' />
-
-              {/* Author Profile Picture with Instagram Gradient Story Ring */}
-              <div className='absolute top-2.5 left-2.5 z-10'>
-                <div className='p-0.5 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 shadow-md'>
-                  <img
-                    src={authorPic}
-                    alt={authorName}
-                    loading='lazy'
-                    decoding='async'
-                    className='size-7 rounded-full object-cover border-2 border-white dark:border-slate-900'
-                  />
+              <div className='relative'>
+                {/* Official Instagram Ring */}
+                <div
+                  className={`p-[2.5px] rounded-full shadow-xs transition-all ${
+                    hasUnseen
+                      ? hasCircleStory
+                        ? 'bg-[linear-gradient(45deg,#10b981_0%,#059669_50%,#047857_100%)]'
+                        : 'bg-[linear-gradient(45deg,#f09433_0%,#e6683c_25%,#dc2743_50%,#cc2366_75%,#bc1888_100%)]'
+                      : 'bg-slate-300 dark:bg-slate-700/80 opacity-75'
+                  }`}
+                >
+                  <div className='p-[2px] rounded-full bg-white dark:bg-[#0B0F19]'>
+                    <img
+                      src={authorPic}
+                      alt={username}
+                      loading='lazy'
+                      decoding='async'
+                      className='size-14 sm:size-16 rounded-full object-cover'
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Multiple Stories Badge (e.g. 2 or 3 stories) */}
-              {storyCount > 1 && (
-                <div className='absolute top-2.5 right-2.5 z-10 px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1 shadow-sm'>
-                  <Layers className='w-2.5 h-2.5 text-indigo-400' />
-                  <span>{storyCount}</span>
-                </div>
-              )}
-
-              {/* Text Content Preview */}
-              {latestStory.content && (
-                <p className='absolute top-12 left-2.5 right-2.5 z-10 text-white text-xs font-medium line-clamp-3 leading-tight drop-shadow-sm'>
-                  {latestStory.content}
-                </p>
-              )}
-
-              {/* User Full Name */}
-              <p className='text-white absolute bottom-2 left-2.5 right-2.5 z-10 text-[11px] font-semibold truncate drop-shadow-xs'>
-                {authorName}
-              </p>
+              {/* Exact Instagram Username Truncation */}
+              <span
+                className={`text-[11px] sm:text-[12px] mt-1.5 truncate max-w-[68px] sm:max-w-[76px] text-center font-normal tracking-tight transition-colors ${
+                  hasUnseen
+                    ? 'text-gray-900 dark:text-gray-100 font-medium'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}
+              >
+                {username}
+              </span>
             </motion.div>
           )
         })}
       </div>
 
-      {/* Add Story Modal */}
-      {showModal && <StoryModal setShowModal={setShowModal} />}
+      {/* Story Creation Studio Modal */}
+      <StoryModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        setShowModal={setShowModal}
+      />
 
-      {/* Full Instagram-Style Story Viewer */}
+      {/* Fullscreen Advanced Story Viewer */}
       {activeViewerData && (
         <Storyviewers
           userGroups={activeViewerData.userGroups}
           initialUserIndex={activeViewerData.initialUserIndex}
           onClose={() => setActiveViewerData(null)}
+          onAddStory={() => setShowModal(true)}
         />
       )}
     </div>

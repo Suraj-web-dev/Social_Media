@@ -220,6 +220,58 @@ const postSlice = createSlice({
     clearUserPosts: (state) => {
       state.userPosts = []
     },
+    toggleLikeOptimistic: (state, action) => {
+      const { postId, currentUserId, currentUser } = action.payload || {}
+      if (!postId || !currentUserId) return
+
+      const updateLikes = (target) => {
+        if (!target) return
+        if (!Array.isArray(target.likes_count)) target.likes_count = []
+        const index = target.likes_count.findIndex((u) => {
+          const uid = typeof u === 'object' && u ? (u._id || u.id) : u
+          return uid?.toString() === currentUserId?.toString()
+        })
+        if (index > -1) {
+          target.likes_count.splice(index, 1)
+        } else {
+          target.likes_count.push(currentUser || { _id: currentUserId })
+        }
+      }
+
+      const post = state.posts.find((p) => p._id === postId)
+      updateLikes(post)
+      const userPost = state.userPosts.find((p) => p._id === postId)
+      updateLikes(userPost)
+      const reel = state.reels.find((p) => p._id === postId)
+      updateLikes(reel)
+      const savedPost = state.savedPosts.find((p) => p._id === postId)
+      updateLikes(savedPost)
+    },
+    toggleCommentLikeOptimistic: (state, action) => {
+      const { postId, commentId, currentUserId } = action.payload || {}
+      if (!postId || !commentId || !currentUserId) return
+
+      const updateCommentLike = (target) => {
+        if (!target || !Array.isArray(target.comments)) return
+        const comment = target.comments.find((c) => c._id === commentId)
+        if (!comment) return
+        if (!Array.isArray(comment.likes)) comment.likes = []
+        const index = comment.likes.findIndex((u) => {
+          const uid = typeof u === 'object' && u ? (u._id || u.id) : u
+          return uid?.toString() === currentUserId?.toString()
+        })
+        if (index > -1) {
+          comment.likes.splice(index, 1)
+        } else {
+          comment.likes.push(currentUserId)
+        }
+      }
+
+      updateCommentLike(state.posts.find((p) => p._id === postId))
+      updateCommentLike(state.userPosts.find((p) => p._id === postId))
+      updateCommentLike(state.reels.find((p) => p._id === postId))
+      updateCommentLike(state.savedPosts.find((p) => p._id === postId))
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -400,5 +452,10 @@ const postSlice = createSlice({
   },
 })
 
-export const { clearPostError, clearUserPosts } = postSlice.actions
+export const {
+  clearPostError,
+  clearUserPosts,
+  toggleLikeOptimistic,
+  toggleCommentLikeOptimistic,
+} = postSlice.actions
 export default postSlice.reducer

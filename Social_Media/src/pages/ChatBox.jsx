@@ -41,7 +41,7 @@ const ChatBox = () => {
   }
 
   return (
-    <div className='h-screen flex flex-col bg-white dark:bg-slate-900 overflow-hidden max-w-4xl mx-auto border-x border-gray-100 dark:border-slate-800 shadow-sm'>
+    <div className='h-[calc(100dvh-5rem)] sm:h-full w-full flex flex-col glass-card overflow-hidden sm:rounded-none border-x-0 border-y-0 shadow-none'>
       {/* Top Chat Header */}
       <ChatHeader recipient={recipient} />
 
@@ -49,7 +49,9 @@ const ChatBox = () => {
       {loading && messages.length === 0 ? (
         <div className='flex-1 flex flex-col items-center justify-center text-indigo-600 gap-2'>
           <Loader2 className='w-7 h-7 animate-spin' />
-          <p className='text-sm text-gray-500 dark:text-gray-400'>Loading conversation...</p>
+          <p className='text-xs font-semibold text-gray-500 animate-pulse'>
+            Loading conversation...
+          </p>
         </div>
       ) : (
         <MessageList

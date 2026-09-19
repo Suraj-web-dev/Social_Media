@@ -119,6 +119,19 @@ const authSlice = createSlice({
     setUser: (state, action) => {
       state.user = action.payload
     },
+    toggleBookmarkOptimistic: (state, action) => {
+      const { postId } = action.payload || {}
+      if (!state.user || !postId) return
+      if (!Array.isArray(state.user.saved_posts)) state.user.saved_posts = []
+      const index = state.user.saved_posts.findIndex(
+        (id) => (typeof id === 'object' ? id._id?.toString() : id?.toString()) === postId.toString()
+      )
+      if (index > -1) {
+        state.user.saved_posts.splice(index, 1)
+      } else {
+        state.user.saved_posts.push(postId)
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -241,5 +254,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { clearAuthError, setUser } = authSlice.actions
+export const { clearAuthError, setUser, toggleBookmarkOptimistic } = authSlice.actions
 export default authSlice.reducer

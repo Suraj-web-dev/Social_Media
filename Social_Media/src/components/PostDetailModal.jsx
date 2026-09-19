@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   X,
   Heart,
@@ -27,7 +28,10 @@ import {
   likeUnlikeComment,
   editCommentInPost,
   bookmarkPost,
+  toggleLikeOptimistic,
+  toggleCommentLikeOptimistic,
 } from '../redux/slices/postSlice'
+import { toggleBookmarkOptimistic } from '../redux/slices/authSlice'
 import PostOptionsMenu from './PostOptionsMenu'
 import LikesModal from './LikesModal'
 import SharePostModal from './SharePostModal'
@@ -115,8 +119,24 @@ const PostDetailModal = ({ isOpen, onClose, post }) => {
 
   // Like post toggle
   const handleLikePost = () => {
-    if (currentPost._id) {
-      dispatch(likeUnlikePost(currentPost._id))
+    if (currentPost._id && currentUser?._id) {
+      dispatch(
+        toggleLikeOptimistic({
+          postId: currentPost._id,
+          currentUserId: currentUser._id,
+          currentUser,
+        })
+      )
+      dispatch(likeUnlikePost(currentPost._id)).unwrap().catch(() => {
+        dispatch(
+          toggleLikeOptimistic({
+            postId: currentPost._id,
+            currentUserId: currentUser._id,
+            currentUser,
+          })
+        )
+        showToast.error('Network error. Like could not be saved.')
+      })
     }
   }
 
@@ -127,14 +147,30 @@ const PostDetailModal = ({ isOpen, onClose, post }) => {
       setShowHeartAnim(false)
     }, 900)
 
-    if (!isPostLiked && currentPost._id) {
-      dispatch(likeUnlikePost(currentPost._id))
+    if (!isPostLiked && currentPost._id && currentUser?._id) {
+      dispatch(
+        toggleLikeOptimistic({
+          postId: currentPost._id,
+          currentUserId: currentUser._id,
+          currentUser,
+        })
+      )
+      dispatch(likeUnlikePost(currentPost._id)).unwrap().catch(() => {
+        dispatch(
+          toggleLikeOptimistic({
+            postId: currentPost._id,
+            currentUserId: currentUser._id,
+            currentUser,
+          })
+        )
+      })
     }
   }
 
   // Toggle bookmark
   const handleBookmarkPost = async () => {
     if (currentPost._id) {
+      dispatch(toggleBookmarkOptimistic({ postId: currentPost._id }))
       try {
         const res = await dispatch(bookmarkPost(currentPost._id)).unwrap()
         if (res.isBookmarked) {
@@ -143,6 +179,7 @@ const PostDetailModal = ({ isOpen, onClose, post }) => {
           showToast.info('Post removed from bookmarks.')
         }
       } catch (err) {
+        dispatch(toggleBookmarkOptimistic({ postId: currentPost._id }))
         showToast.error(err || 'Failed to update bookmark.')
       }
     }
@@ -174,12 +211,26 @@ const PostDetailModal = ({ isOpen, onClose, post }) => {
 
   // Like / Unlike Comment
   const handleLikeComment = async (commentId) => {
-    if (!commentId || !currentPost._id) return
+    if (!commentId || !currentPost._id || !currentUser?._id) return
+    dispatch(
+      toggleCommentLikeOptimistic({
+        postId: currentPost._id,
+        commentId,
+        currentUserId: currentUser._id,
+      })
+    )
     try {
       await dispatch(
         likeUnlikeComment({ postId: currentPost._id, commentId })
       ).unwrap()
     } catch (err) {
+      dispatch(
+        toggleCommentLikeOptimistic({
+          postId: currentPost._id,
+          commentId,
+          currentUserId: currentUser._id,
+        })
+      )
       showToast.error(err || 'Failed to update comment like.')
     }
   }
@@ -262,7 +313,7 @@ const PostDetailModal = ({ isOpen, onClose, post }) => {
       )
     : ''
 
-  return (
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -835,7 +886,8 @@ const PostDetailModal = ({ isOpen, onClose, post }) => {
         onClose={() => setShowShareModal(false)}
         post={currentPost}
       />
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }
 

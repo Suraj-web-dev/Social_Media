@@ -24,7 +24,9 @@ import {
   fetchReels,
   likeUnlikePost,
   bookmarkPost,
+  toggleLikeOptimistic,
 } from '../redux/slices/postSlice'
+import { toggleBookmarkOptimistic } from '../redux/slices/authSlice'
 import { toggleFollowUser } from '../redux/slices/userSlice'
 import PostDetailModal from '../components/PostDetailModal'
 import SharePostModal from '../components/SharePostModal'
@@ -130,21 +132,55 @@ const ReelItem = ({
     setShowHeartAnim(true)
     setTimeout(() => setShowHeartAnim(false), 900)
 
-    if (!isLiked && reel._id) {
-      dispatch(likeUnlikePost(reel._id))
+    if (!isLiked && reel._id && currentUser?._id) {
+      dispatch(
+        toggleLikeOptimistic({
+          postId: reel._id,
+          currentUserId: currentUser._id,
+          currentUser,
+        })
+      )
+      dispatch(likeUnlikePost(reel._id)).unwrap().catch(() => {
+        dispatch(
+          toggleLikeOptimistic({
+            postId: reel._id,
+            currentUserId: currentUser._id,
+            currentUser,
+          })
+        )
+      })
     }
   }
 
   const handleLikeClick = (e) => {
     e.stopPropagation()
-    if (reel._id) {
-      dispatch(likeUnlikePost(reel._id))
+    if (reel._id && currentUser?._id) {
+      // 1. Instant 0ms UI update
+      dispatch(
+        toggleLikeOptimistic({
+          postId: reel._id,
+          currentUserId: currentUser._id,
+          currentUser,
+        })
+      )
+      // 2. Background Sync
+      dispatch(likeUnlikePost(reel._id)).unwrap().catch(() => {
+        dispatch(
+          toggleLikeOptimistic({
+            postId: reel._id,
+            currentUserId: currentUser._id,
+            currentUser,
+          })
+        )
+        showToast.error('Network error. Like could not be saved.')
+      })
     }
   }
 
   const handleBookmarkClick = async (e) => {
     e.stopPropagation()
     if (reel._id) {
+      dispatch(toggleBookmarkOptimistic({ postId: reel._id }))
       try {
         const res = await dispatch(bookmarkPost(reel._id)).unwrap()
         if (res.isBookmarked) {
@@ -153,6 +189,7 @@ const ReelItem = ({
           showToast.info('Reel removed from bookmarks.')
         }
       } catch (err) {
+        dispatch(toggleBookmarkOptimistic({ postId: reel._id }))
         showToast.error(err || 'Failed to update bookmark.')
       }
     }
