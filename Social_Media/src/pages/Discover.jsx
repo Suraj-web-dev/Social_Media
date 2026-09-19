@@ -82,6 +82,8 @@ const Discover = () => {
                   <img
                     src={user.profile_picture || '/sample_profile.jpg'}
                     alt={user.full_name}
+                    loading='lazy'
+                    decoding='async'
                     onClick={() => navigate(`/profile/${user._id}`)}
                     className='w-20 h-20 rounded-full object-cover shadow-sm border border-gray-100 dark:border-slate-700 cursor-pointer hover:scale-105 transition-transform duration-200'
                   />

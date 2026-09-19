@@ -125,6 +125,8 @@ const Profile = () => {
             <img
               src={user.profile_picture || '/sample_profile.jpg'}
               alt={user.full_name || 'User'}
+              loading='lazy'
+              decoding='async'
               className='w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white dark:border-slate-900 shadow-md bg-white dark:bg-slate-800'
             />
 
@@ -309,6 +311,8 @@ const Profile = () => {
                   <img
                     src={post.image_urls[0]}
                     alt='Media post'
+                    loading='lazy'
+                    decoding='async'
                     className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
                   />
                   <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white gap-2'>

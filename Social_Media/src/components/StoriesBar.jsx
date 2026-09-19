@@ -104,6 +104,8 @@ const StoriesBar = () => {
               <img
                 src={myStoryGroup.latestStory.media_url}
                 alt=''
+                loading='lazy'
+                decoding='async'
                 className='absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
               />
             ) : myStoryGroup.latestStory.media_type === 'video' &&
@@ -124,6 +126,8 @@ const StoriesBar = () => {
                 <img
                   src={userAvatar}
                   alt='Your Story'
+                  loading='lazy'
+                  decoding='async'
                   className='size-7 rounded-full object-cover border-2 border-white dark:border-slate-900'
                 />
               </div>
@@ -216,6 +220,8 @@ const StoriesBar = () => {
                 <img
                   src={latestStory.media_url}
                   alt=''
+                  loading='lazy'
+                  decoding='async'
                   className='absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
                 />
               ) : latestStory.media_type === 'video' &&
@@ -236,6 +242,8 @@ const StoriesBar = () => {
                   <img
                     src={authorPic}
                     alt={authorName}
+                    loading='lazy'
+                    decoding='async'
                     className='size-7 rounded-full object-cover border-2 border-white dark:border-slate-900'
                   />
                 </div>

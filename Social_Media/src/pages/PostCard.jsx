@@ -154,6 +154,8 @@ const PostCard = ({ post }) => {
             whileHover={{ scale: 1.05 }}
             src={authorPic}
             alt={authorName}
+            loading='lazy'
+            decoding='async'
             className='w-10 h-10 rounded-full object-cover border border-gray-100 dark:border-slate-800 shadow-xs'
           />
           <div>
@@ -237,6 +239,8 @@ const PostCard = ({ post }) => {
           <img
             src={currentPost.image_urls[0]}
             alt='Post media'
+            loading='lazy'
+            decoding='async'
             className='w-full h-auto max-h-120 object-contain rounded-2xl'
           />
 
@@ -367,6 +371,8 @@ const PostCard = ({ post }) => {
                 key={liker._id || i}
                 src={liker.profile_picture || '/sample_profile.jpg'}
                 alt={liker.full_name || 'Liker'}
+                loading='lazy'
+                decoding='async'
                 className='w-7 h-7 rounded-full object-cover border-2 border-white dark:border-slate-900 shadow-xs'
               />
             ))}

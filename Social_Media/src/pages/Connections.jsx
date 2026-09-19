@@ -365,6 +365,8 @@ const Connections = () => {
                         <img
                           src={userPic}
                           alt={userName}
+                          loading='lazy'
+                          decoding='async'
                           onClick={() => navigate(`/profile/${userId}`)}
                           className='w-13 h-13 rounded-full object-cover shrink-0 border border-gray-100 dark:border-slate-800 shadow-xs cursor-pointer hover:opacity-90 transition'
                         />
