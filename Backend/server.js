@@ -20,12 +20,22 @@ const PORT = process.env.PORT || 5000
 // Connect to MongoDB Database
 connectDB()
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://social-media-2-aq54.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+].filter(Boolean)
+
 // Resilient CORS Configuration for Deployment & Local Dev
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Reflect incoming origin or allow true for credentials compatibility
-      return callback(null, origin || true)
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) return callback(null, true)
+      // Allow exact origin reflection with credentials
+      return callback(null, origin)
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
