@@ -5,25 +5,11 @@ import express from "express";
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "http://127.0.0.1:5173",
-].filter(Boolean);
-
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      // Reflect incoming origin or allow true for credentials compatibility
-      return callback(null, origin || true);
-    },
-    methods: ["GET", "POST"],
+    origin: "http://localhost:5173",
     credentials: true,
   },
-  transports: ["websocket", "polling"],
-  pingTimeout: 60000,
-  pingInterval: 25000,
 });
 
 // Map of userId -> socketId

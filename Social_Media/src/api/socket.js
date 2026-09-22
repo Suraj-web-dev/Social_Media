@@ -7,17 +7,7 @@ import {
 import { receiveNotification } from '../redux/slices/notificationSlice'
 import { showToast } from '../utils/toast'
 
-const getSocketURL = () => {
-  let url =
-    import.meta.env.VITE_BACKEND_URL ||
-    (import.meta.env.PROD
-      ? 'https://insta-srx2.onrender.com'
-      : 'http://localhost:5000')
-
-  return url.trim().replace(/\/api\/?$/, '').replace(/\/+$/, '')
-}
-
-const SOCKET_URL = getSocketURL()
+const SOCKET_URL = 'http://localhost:5000'
 
 let socket = null
 let currentConnectedUserId = null
