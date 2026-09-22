@@ -1,7 +1,21 @@
 import axios from "axios";
 
+const getBaseURL = () => {
+  let url = import.meta.env.VITE_BACKEND_URL;
+  if (!url) {
+    url = import.meta.env.PROD
+      ? "https://insta-srx2.onrender.com/api"
+      : "http://localhost:5000/api";
+  }
+  url = url.trim().replace(/\/+$/, "");
+  if (!url.endsWith("/api")) {
+    url = `${url}/api`;
+  }
+  return url;
+};
+
 const API = axios.create({
-  baseURL: "https://social-media-iv1q-56sz5sb2j-suraj-a081.vercel.app/api",
+  baseURL: getBaseURL(),
   withCredentials: true,
 });
 
