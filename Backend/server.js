@@ -20,15 +20,25 @@ const PORT = process.env.PORT || 5000
 // Connect to MongoDB Database
 connectDB()
 
-// Standard CORS Configuration
+// Resilient CORS Configuration for Deployment & Local Dev
 app.use(
   cors({
-    origin: [
-      process.env.FRONTEND_URL,
-      'http://localhost:5173',
-      'https://social-media-2-aq54.onrender.com/',
-    ].filter(Boolean),
+    origin: (origin, callback) => {
+      // Reflect incoming origin or allow true for credentials compatibility
+      return callback(null, origin || true)
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'Cookie',
+      'Set-Cookie',
+    ],
+    exposedHeaders: ['Set-Cookie'],
   })
 )
 

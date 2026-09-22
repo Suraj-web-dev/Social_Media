@@ -14,7 +14,10 @@ const allowedOrigins = [
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Reflect incoming origin or allow true for credentials compatibility
+      return callback(null, origin || true);
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
