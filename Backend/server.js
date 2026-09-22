@@ -20,48 +20,17 @@ const PORT = process.env.PORT || 5000
 // Connect to MongoDB Database
 connectDB()
 
-// Robust CORS Middleware: Dynamic origin reflection with credentials
+// Standard CORS Configuration
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // In CORS standard, reflecting incoming origin allows credentials: true safely
-      return callback(null, origin || true)
-    },
+    origin: [
+      process.env.FRONTEND_URL,
+      'http://localhost:5173',
+      'https://social-media-2-aq54.onrender.com/',
+    ].filter(Boolean),
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-      'Origin',
-      'X-Requested-With',
-      'Content-Type',
-      'Accept',
-      'Authorization',
-      'Cookie',
-      'Set-Cookie',
-    ],
-    exposedHeaders: ['Set-Cookie'],
   })
 )
-
-// Explicit preflight and response header fallback
-app.use((req, res, next) => {
-  const origin = req.headers.origin
-  if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin)
-    res.setHeader('Access-Control-Allow-Credentials', 'true')
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'GET, POST, PUT, DELETE, PATCH, OPTIONS'
-    )
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie'
-    )
-  }
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200)
-  }
-  next()
-})
 
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true, limit: '50mb' }))

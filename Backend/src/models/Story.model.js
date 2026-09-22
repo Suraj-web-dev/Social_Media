@@ -11,6 +11,10 @@ const storySchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    caption: {
+      type: String,
+      default: "",
+    },
     media_url: {
       type: String,
       default: "",
@@ -24,13 +28,45 @@ const storySchema = new mongoose.Schema(
       type: String,
       default: "#4f46e5",
     },
+    font_style: {
+      type: String,
+      default: "modern",
+    },
+    filter: {
+      type: String,
+      default: "normal",
+    },
+    music: {
+      title: { type: String, default: "" },
+      artist: { type: String, default: "" },
+    },
+    location: {
+      type: String,
+      default: "",
+    },
+    target_circle: {
+      type: String,
+      default: "all",
+    },
     views: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        viewedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    likes: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
       },
     ],
-    // Story expires automatically after 24 hours (86400 seconds)
+    // Story expires automatically after 24 hours (86400 seconds) in MongoDB
     createdAt: {
       type: Date,
       default: Date.now,
@@ -42,6 +78,8 @@ const storySchema = new mongoose.Schema(
   }
 );
 
+// Add index for fast query of active stories in last 24h
+storySchema.index({ createdAt: -1 });
+
 const Story = mongoose.model("Story", storySchema);
 export default Story;
-

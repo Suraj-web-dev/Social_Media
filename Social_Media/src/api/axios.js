@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_BACKEND_URL
-  let url = envUrl || (import.meta.env.PROD ? 'https://social-media-012l.onrender.com' : 'http://localhost:5000')
+  let url = envUrl || (import.meta.env.PROD ? 'https://insta-srx2.onrender.com' : 'http://localhost:5000')
   url = url.trim().replace(/\/+$/, '')
   // Auto-fix typo if 0121 is passed in Render dashboard environment variables
   url = url.replace('social-media-0121.onrender.com', 'social-media-012l.onrender.com')
