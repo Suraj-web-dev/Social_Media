@@ -5,7 +5,6 @@ const API = axios.create({
   withCredentials: true,
 });
 
-// Token automatically request ke saath jayega
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
