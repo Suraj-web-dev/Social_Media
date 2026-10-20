@@ -21,13 +21,13 @@ const StoriesBar = () => {
     dispatch(fetchFeedStories())
   }, [dispatch])
 
-  // Group stories by creator
+  // Group real stories from database by creator
   const { myStoryGroup, otherStoryGroups, allUserGroups } = useMemo(() => {
     const map = new Map()
     const currentId = currentUser?._id?.toString()
     const now = Date.now()
 
-    stories.forEach((story) => {
+    ;(stories || []).forEach((story) => {
       if (story.createdAt) {
         const diff = now - new Date(story.createdAt).getTime()
         if (diff > 24 * 60 * 60 * 1000) return
@@ -78,46 +78,6 @@ const StoriesBar = () => {
   }, [stories, currentUser])
 
   const userAvatar = currentUser?.profile_picture || '/sample_profile.jpg'
-
-  // Default mock stories matching the design if DB has few stories
-  const defaultStoryUsers = [
-    {
-      id: 'mock-1',
-      name: 'Sonya',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      isLive: true,
-    },
-    {
-      id: 'mock-2',
-      name: 'Adam',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'mock-3',
-      name: 'Andrew',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'mock-4',
-      name: 'Nicole',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'mock-5',
-      name: 'Ashley',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'mock-6',
-      name: 'Michael',
-      avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'mock-7',
-      name: 'Damian',
-      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
-    },
-  ]
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -247,11 +207,12 @@ const StoriesBar = () => {
           </span>
         </div>
 
-        {/* 2. Real Backend Stories */}
+        {/* 2. Real Database Stories from Other Users Only */}
         {otherStoryGroups.map((group, idx) => {
           const author = group.user || {}
           const authorPic = author.profile_picture || '/sample_profile.jpg'
           const authorName = author.full_name?.split(' ')[0] || author.username || 'creator'
+          const hasUnseen = group.hasUnseen
 
           return (
             <motion.div
@@ -262,7 +223,13 @@ const StoriesBar = () => {
               className='flex flex-col items-center shrink-0 cursor-pointer group'
             >
               <div className='relative'>
-                <div className='p-[2.5px] rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600 shadow-sm'>
+                <div
+                  className={`p-[2.5px] rounded-full shadow-sm transition-all ${
+                    hasUnseen
+                      ? 'bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600'
+                      : 'border border-slate-300 dark:border-white/20 opacity-80'
+                  }`}
+                >
                   <div className='p-[2px] rounded-full bg-white dark:bg-[#0c101d]'>
                     <img
                       src={authorPic}
@@ -279,41 +246,6 @@ const StoriesBar = () => {
             </motion.div>
           )
         })}
-
-        {/* 3. Fallback Stories (Matches exactly the reference image: Sonya LIVE, Adam, Andrew, Nicole, etc.) */}
-        {otherStoryGroups.length < 5 &&
-          defaultStoryUsers.map((item) => (
-            <motion.div
-              key={item.id}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.94 }}
-              onClick={() => setShowModal(true)}
-              className='flex flex-col items-center shrink-0 cursor-pointer group'
-            >
-              <div className='relative'>
-                <div className='p-[2.5px] rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600 shadow-sm'>
-                  <div className='p-[2px] rounded-full bg-white dark:bg-[#0c101d]'>
-                    <img
-                      src={item.avatar}
-                      alt={item.name}
-                      className='size-14 sm:size-16 rounded-full object-cover'
-                    />
-                  </div>
-                </div>
-
-                {/* Pink LIVE Tag Badge on Sonya */}
-                {item.isLive && (
-                  <span className='absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-extrabold tracking-wider border-2 border-white dark:border-[#0c101d] shadow-sm uppercase'>
-                    LIVE
-                  </span>
-                )}
-              </div>
-
-              <span className='text-xs text-gray-700 dark:text-gray-300 mt-1.5 truncate max-w-[72px] text-center font-medium'>
-                {item.name}
-              </span>
-            </motion.div>
-          ))}
       </div>
 
       {/* Story Creation Studio Modal */}

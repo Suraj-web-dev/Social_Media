@@ -10,7 +10,7 @@ import {
   MessageCircle,
   Plus,
   Loader2,
-  Sparkles,
+  ImagePlus,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -35,132 +35,20 @@ const Feed = () => {
     0
   )
 
-  // Default sample posts matching the reference image layout if DB has few posts
-  const samplePosts = [
-    {
-      _id: 'sample-1',
-      user: {
-        _id: 'user-sonya',
-        full_name: 'Sonya Leena',
-        username: 'sonya_leena',
-        profile_picture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-        location: 'Dubai, UAE',
-      },
-      content: 'You can never dull my sparkle ✨',
-      location: 'Dubai, UAE',
-      image_urls: [
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80',
-      ],
-      likes_count: Array(360).fill({ _id: 'liker-1', full_name: 'Andrew' }),
-      comments: [
-        { text: 'Stunning capture!' },
-        { text: 'Love this vibe ✨' },
-      ],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: 'sample-2',
-      user: {
-        _id: 'user-adam',
-        full_name: 'Adam Addisin',
-        username: 'adam_addisin',
-        profile_picture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        location: 'Oklahoma, US',
-      },
-      content: 'In photography, there is a reality so subtle that it becomes more real than reality 📷',
-      location: 'Oklahoma, US',
-      image_urls: [
-        'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80',
-      ],
-      likes_count: Array(360).fill({ _id: 'liker-2', full_name: 'Andrew' }),
-      comments: [{ text: 'Awesome perspective!' }],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: 'sample-3',
-      user: {
-        _id: 'user-andrew',
-        full_name: 'Andrew Dewitt',
-        username: 'andrew_dewitt',
-        profile_picture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        location: 'Overland Park, KS',
-      },
-      content: 'The unexpected moment is always sweeter! Exploring the streets today.',
-      location: 'Overland Park, KS',
-      image_urls: [
-        'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800&auto=format&fit=crop&q=80',
-      ],
-      likes_count: Array(360).fill({ _id: 'liker-3', full_name: 'Sonya' }),
-      comments: [{ text: 'Great photo Andrew!' }],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: 'sample-4',
-      user: {
-        _id: 'user-nicole',
-        full_name: 'Nicole Segall',
-        username: 'nicole_segall',
-        profile_picture: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-        location: 'New Delhi, India',
-      },
-      content: 'Colorful streets and beautiful memories ❤️',
-      location: 'New Delhi, India',
-      image_urls: [
-        'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?w=800&auto=format&fit=crop&q=80',
-      ],
-      likes_count: Array(285).fill({ _id: 'liker-4', full_name: 'Michael' }),
-      comments: [{ text: 'So colorful!' }],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: 'sample-5',
-      user: {
-        _id: 'user-michael',
-        full_name: 'Michael Gilmore',
-        username: 'michael_gilmore',
-        profile_picture: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-        location: 'Lawrence, KS',
-      },
-      content: 'Chasing the golden sunset vibes 🌇',
-      location: 'Lawrence, KS',
-      image_urls: [
-        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80',
-      ],
-      likes_count: Array(412).fill({ _id: 'liker-5', full_name: 'Damian' }),
-      comments: [{ text: 'Pure magic!' }],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: 'sample-6',
-      user: {
-        _id: 'user-damian',
-        full_name: 'Damian Efron',
-        username: 'damian_efron',
-        profile_picture: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
-        location: 'Birmingham, UK',
-      },
-      content: 'Weekend adventures in the countryside 🍂',
-      location: 'Birmingham, UK',
-      image_urls: [
-        'https://images.unsplash.com/photo-1511497584788-87676104235f?w=800&auto=format&fit=crop&q=80',
-      ],
-      likes_count: Array(190).fill({ _id: 'liker-6', full_name: 'Ashley' }),
-      comments: [{ text: 'Looks so peaceful!' }],
-      createdAt: new Date().toISOString(),
-    },
-  ]
-
-  // Combine real posts from backend + sample posts if posts are few
-  const allDisplayPosts = posts && posts.length > 0 ? [...posts, ...samplePosts] : samplePosts
-
-  // Filter posts based on search query
-  const filteredPosts = allDisplayPosts.filter((p) => {
+  // Real posts from backend only (no dummy/mock data)
+  const filteredPosts = (posts || []).filter((p) => {
     if (!searchQuery.trim()) return true
     const q = searchQuery.toLowerCase()
     const authorName = (p.user?.full_name || '').toLowerCase()
+    const authorUsername = (p.user?.username || '').toLowerCase()
     const content = (p.content || '').toLowerCase()
     const location = (p.location || '').toLowerCase()
-    return authorName.includes(q) || content.includes(q) || location.includes(q)
+    return (
+      authorName.includes(q) ||
+      authorUsername.includes(q) ||
+      content.includes(q) ||
+      location.includes(q)
+    )
   })
 
   return (
@@ -239,13 +127,37 @@ const Feed = () => {
               Loading your feed...
             </p>
           </div>
-        ) : (
+        ) : filteredPosts.length > 0 ? (
           /* 3-Column Modern Grid (matching screenshot) */
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5'>
             {filteredPosts.map((post) => (
               <PostCard key={post._id} post={post} />
             ))}
           </div>
+        ) : (
+          /* Clean Empty State when no real posts in database */
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className='bg-white dark:bg-[#111625] rounded-[28px] p-10 sm:p-14 text-center space-y-4 border border-slate-100 dark:border-white/[0.06] shadow-sm max-w-lg mx-auto'
+          >
+            <div className='size-14 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center mx-auto shadow-xs'>
+              <ImagePlus className='w-7 h-7 stroke-[1.8]' />
+            </div>
+            <h3 className='font-bold text-gray-900 dark:text-white text-base'>
+              No posts in your feed yet
+            </h3>
+            <p className='text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto leading-relaxed'>
+              Be the first to share your thoughts, photos, or updates with your connections.
+            </p>
+            <button
+              type='button'
+              onClick={() => navigate('/create-post')}
+              className='px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-pink-500 text-white text-xs font-semibold shadow-md shadow-rose-500/25 hover:brightness-105 active:scale-95 transition cursor-pointer'
+            >
+              Create First Post
+            </button>
+          </motion.div>
         )}
       </div>
 

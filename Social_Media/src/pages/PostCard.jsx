@@ -5,7 +5,6 @@ import {
   MessageCircle,
   Send,
   Bookmark,
-  MoreHorizontal,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import moment from 'moment'
@@ -44,12 +43,17 @@ const PostCard = ({ post }) => {
   )
   const currentPost = reduxPost || post
 
+  // Real Database Author & Post details
   const author = currentPost.user || {}
   const authorId = author._id || author
-  const authorName = author.full_name || 'Creator'
+  const authorName = author.full_name || 'User'
   const authorPic = author.profile_picture || '/sample_profile.jpg'
-  const location = currentPost.location || author.location || 'Dubai, UAE'
+  const location =
+    currentPost.location ||
+    author.location ||
+    (currentPost.createdAt ? moment(currentPost.createdAt).fromNow() : '')
 
+  // Real Database Likes
   const likesList = currentPost.likes_count || []
   const isLiked = likesList.some(
     (id) => (typeof id === 'object' ? id._id : id) === currentUser?._id
@@ -126,9 +130,8 @@ const PostCard = ({ post }) => {
   const populatedLikers = likesList.filter(
     (u) => typeof u === 'object' && u._id
   )
-  const firstLiker =
-    populatedLikers[0] || (likesList.length > 0 ? { full_name: 'Andrew' } : null)
-  const totalLikes = likesList.length || 360
+  const firstLiker = populatedLikers[0] || null
+  const totalLikes = likesList.length
 
   const hasMedia = currentPost.image_urls && currentPost.image_urls.length > 0
   const mediaUrl = hasMedia ? currentPost.image_urls[0] : null
@@ -160,9 +163,11 @@ const PostCard = ({ post }) => {
                 <BadgeCheck className='w-3.5 h-3.5 text-blue-500 fill-blue-50' />
               )}
             </div>
-            <p className='text-[11px] text-gray-400 font-normal leading-tight truncate max-w-[140px]'>
-              {location}
-            </p>
+            {location && (
+              <p className='text-[11px] text-gray-400 font-normal leading-tight truncate max-w-[140px]'>
+                {location}
+              </p>
+            )}
           </div>
         </div>
 
@@ -263,21 +268,40 @@ const PostCard = ({ post }) => {
         </button>
       </div>
 
-      {/* 4. Likes & Caption */}
+      {/* 4. Real Likes & Caption */}
       <div className='space-y-1 text-xs'>
-        <p
-          onClick={() => setShowLikesModal(true)}
-          className='text-gray-800 dark:text-gray-200 cursor-pointer font-semibold'
-        >
-          Liked by{' '}
-          <strong className='font-bold text-gray-900 dark:text-white'>
-            {firstLiker?.full_name?.split(' ')[0] || 'Andrew'}
-          </strong>{' '}
-          and{' '}
-          <strong className='font-bold text-gray-900 dark:text-white'>
-            {totalLikes} others
-          </strong>
-        </p>
+        {totalLikes > 0 ? (
+          <p
+            onClick={() => setShowLikesModal(true)}
+            className='text-gray-800 dark:text-gray-200 cursor-pointer font-semibold'
+          >
+            Liked by{' '}
+            {firstLiker?.full_name ? (
+              <strong className='font-bold text-gray-900 dark:text-white'>
+                {firstLiker.full_name.split(' ')[0]}
+              </strong>
+            ) : null}
+            {totalLikes > 1 ? (
+              <>
+                {' '}and{' '}
+                <strong className='font-bold text-gray-900 dark:text-white'>
+                  {totalLikes - 1} {totalLikes - 1 === 1 ? 'other' : 'others'}
+                </strong>
+              </>
+            ) : !firstLiker?.full_name ? (
+              <strong className='font-bold text-gray-900 dark:text-white'>
+                {totalLikes} {totalLikes === 1 ? 'person' : 'people'}
+              </strong>
+            ) : null}
+          </p>
+        ) : (
+          <p
+            onClick={handleLike}
+            className='text-gray-400 font-normal cursor-pointer hover:text-rose-500 transition'
+          >
+            Be the first to like this
+          </p>
+        )}
 
         {currentPost.content && hasMedia && (
           <p className='text-gray-600 dark:text-gray-400 font-normal leading-relaxed line-clamp-2'>

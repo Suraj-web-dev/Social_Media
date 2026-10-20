@@ -12,8 +12,6 @@ import {
   Plus,
   Camera,
   X,
-  Bell,
-  MessageCircle,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDispatch, useSelector } from 'react-redux'
@@ -24,28 +22,22 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
   const dispatch = useDispatch()
   const { user } = useSelector((state) => state.auth)
   const { posts } = useSelector((state) => state.post)
-  const { unreadCount } = useSelector((state) => state.notification)
-  const { conversations } = useSelector((state) => state.message)
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
 
-  const displayName = user?.full_name || 'Abhinav Khare'
-  const displayUsername = user?.username || 'abhi_navkhare'
+  // Real Database User Details
+  const displayName = user?.full_name || 'User'
+  const displayUsername = user?.username || 'user'
   const profilePic = user?.profile_picture || '/sample_profile.jpg'
-  const bio = user?.bio || 'UI Designer | Traveler | Lifestyle Blogger'
+  const bio = user?.bio || ''
 
-  // Dynamic user stats
+  // Real Dynamic stats from Database
   const userPostsCount = posts.filter(
     (p) => (p.user?._id || p.user) === user?._id
   ).length
   const followersCount = user?.followers?.length || 0
   const followingCount = user?.following?.length || 0
-
-  const totalUnreadMessages = (conversations || []).reduce(
-    (sum, c) => sum + (c.unreadCount || 0),
-    0
-  )
 
   const formatCount = (count) => {
     if (count >= 1000) {
@@ -57,13 +49,6 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
   const handleLogout = () => {
     dispatch(logoutUser())
   }
-
-  // Sample highlights
-  const sampleHighlights = [
-    { id: '1', title: 'Garden', img: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=150&auto=format&fit=crop&q=80' },
-    { id: '2', title: 'Cameras', img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=150&auto=format&fit=crop&q=80' },
-    { id: '3', title: 'Wildlife', img: 'https://images.unsplash.com/photo-1534188753412-3e26d0d618d6?w=150&auto=format&fit=crop&q=80' },
-  ]
 
   return (
     <>
@@ -119,7 +104,7 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
             </div>
           </div>
 
-          {/* 2. User Profile Snippet */}
+          {/* 2. User Profile Snippet (Real Database Info) */}
           <div className='flex flex-col items-center text-center pt-1'>
             <div
               onClick={() => {
@@ -148,14 +133,14 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
             </h2>
             <p className='text-xs text-gray-400 font-medium'>@{displayUsername}</p>
 
-            {/* Stats Row */}
+            {/* Real Stats Row */}
             <div className='flex items-center justify-center gap-4 mt-3 w-full py-2 border-y border-slate-100 dark:border-white/[0.06] text-center'>
               <div
                 onClick={() => navigate('/profile')}
                 className='cursor-pointer group flex-1'
               >
                 <span className='block font-bold text-sm text-gray-900 dark:text-white group-hover:text-rose-500 transition'>
-                  {userPostsCount || 472}
+                  {userPostsCount}
                 </span>
                 <span className='text-[11px] text-gray-400 font-medium'>Posts</span>
               </div>
@@ -165,7 +150,7 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
                 className='cursor-pointer group flex-1'
               >
                 <span className='block font-bold text-sm text-gray-900 dark:text-white group-hover:text-rose-500 transition'>
-                  {followersCount ? formatCount(followersCount) : '12.4K'}
+                  {formatCount(followersCount)}
                 </span>
                 <span className='text-[11px] text-gray-400 font-medium'>Followers</span>
               </div>
@@ -175,19 +160,21 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
                 className='cursor-pointer group flex-1'
               >
                 <span className='block font-bold text-sm text-gray-900 dark:text-white group-hover:text-rose-500 transition'>
-                  {followingCount || 228}
+                  {formatCount(followingCount)}
                 </span>
                 <span className='text-[11px] text-gray-400 font-medium'>Following</span>
               </div>
             </div>
 
-            {/* Bio snippet */}
-            <div className='mt-2.5 text-left w-full px-1'>
-              <p className='text-xs font-bold text-gray-800 dark:text-gray-200'>{displayName}</p>
-              <p className='text-[11px] text-gray-400 font-normal mt-0.5 leading-relaxed'>
-                {bio}
-              </p>
-            </div>
+            {/* Real Bio snippet if present */}
+            {bio && (
+              <div className='mt-2.5 text-left w-full px-1'>
+                <p className='text-xs font-bold text-gray-800 dark:text-gray-200'>{displayName}</p>
+                <p className='text-[11px] text-gray-400 font-normal mt-0.5 leading-relaxed'>
+                  {bio}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* 3. Story Highlights Section */}
@@ -212,25 +199,6 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
                   New
                 </span>
               </button>
-
-              {/* Sample highlights */}
-              {sampleHighlights.map((hl) => (
-                <div
-                  key={hl.id}
-                  className='flex flex-col items-center gap-1 shrink-0 group cursor-pointer'
-                >
-                  <div className='size-11 rounded-full p-[1.5px] border border-slate-200 dark:border-white/10 group-hover:border-rose-400 transition-colors shadow-2xs overflow-hidden'>
-                    <img
-                      src={hl.img}
-                      alt={hl.title}
-                      className='w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform'
-                    />
-                  </div>
-                  <span className='text-[10px] text-gray-500 dark:text-gray-400 font-medium'>
-                    {hl.title}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
 
