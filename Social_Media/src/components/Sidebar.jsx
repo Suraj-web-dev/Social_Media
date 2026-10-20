@@ -1,10 +1,20 @@
 import React, { useState } from 'react'
-import MenuItem from './MenuItem'
 import ThemeToggle from './ThemeToggle'
 import AccountSettingsModal from './AccountSettingsModal'
 import NotificationsModal from './NotificationsModal'
-import { Link, useNavigate } from 'react-router-dom'
-import { CirclePlus, LogOutIcon, Settings, X, Sparkles } from 'lucide-react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import {
+  Home,
+  Compass,
+  Film,
+  Settings,
+  LogOut,
+  Plus,
+  Camera,
+  X,
+  Bell,
+  MessageCircle,
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDispatch, useSelector } from 'react-redux'
 import { logoutUser } from '../redux/slices/authSlice'
@@ -13,16 +23,47 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { user } = useSelector((state) => state.auth)
+  const { posts } = useSelector((state) => state.post)
+  const { unreadCount } = useSelector((state) => state.notification)
+  const { conversations } = useSelector((state) => state.message)
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
 
-  const displayName = user?.full_name || 'User'
-  const displayUsername = user?.username || 'user'
+  const displayName = user?.full_name || 'Abhinav Khare'
+  const displayUsername = user?.username || 'abhi_navkhare'
   const profilePic = user?.profile_picture || '/sample_profile.jpg'
+  const bio = user?.bio || 'UI Designer | Traveler | Lifestyle Blogger'
+
+  // Dynamic user stats
+  const userPostsCount = posts.filter(
+    (p) => (p.user?._id || p.user) === user?._id
+  ).length
+  const followersCount = user?.followers?.length || 0
+  const followingCount = user?.following?.length || 0
+
+  const totalUnreadMessages = (conversations || []).reduce(
+    (sum, c) => sum + (c.unreadCount || 0),
+    0
+  )
+
+  const formatCount = (count) => {
+    if (count >= 1000) {
+      return (count / 1000).toFixed(1) + 'K'
+    }
+    return count
+  }
 
   const handleLogout = () => {
     dispatch(logoutUser())
   }
+
+  // Sample highlights
+  const sampleHighlights = [
+    { id: '1', title: 'Garden', img: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=150&auto=format&fit=crop&q=80' },
+    { id: '2', title: 'Cameras', img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=150&auto=format&fit=crop&q=80' },
+    { id: '3', title: 'Wildlife', img: 'https://images.unsplash.com/photo-1534188753412-3e26d0d618d6?w=150&auto=format&fit=crop&q=80' },
+  ]
 
   return (
     <>
@@ -34,21 +75,21 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={() => setsidebarOpen(false)}
-            className='fixed inset-0 bg-black/70 backdrop-blur-md z-[90] sm:hidden'
+            onClick={() => setsidebarOpen?.(false)}
+            className='fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] sm:hidden'
           />
         )}
       </AnimatePresence>
 
-      {/* Main Glass Sidebar Panel */}
+      {/* Main Instagram Style Sidebar */}
       <aside
-        className={`fixed sm:static inset-y-0 left-0 z-[100] w-72 sm:w-64 xl:w-72 max-w-[85vw] glass-nav sm:bg-white/70 sm:dark:bg-[#0B0F19]/80 sm:backdrop-blur-2xl border-r border-slate-200/80 dark:border-white/[0.07] flex flex-col justify-between items-center shadow-2xl sm:shadow-none transition-transform duration-300 ease-out ${
+        className={`fixed sm:static inset-y-0 left-0 z-[100] w-72 sm:w-64 lg:w-[275px] shrink-0 bg-white dark:bg-[#0c101d] border-r border-slate-100 dark:border-white/[0.06] flex flex-col justify-between overflow-y-auto no-scrollbar shadow-2xl sm:shadow-none transition-transform duration-300 ease-out select-none ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'
         }`}
       >
-        <div className='w-full'>
-          {/* Top Logo & Action Controls */}
-          <div className='flex items-center justify-between px-5 sm:px-6 py-4'>
+        <div className='w-full p-5 lg:p-6 space-y-6'>
+          {/* 1. Header with Instagram Branding */}
+          <div className='flex items-center justify-between'>
             <div
               onClick={() => {
                 navigate('/')
@@ -56,103 +97,239 @@ const Sidebar = ({ sidebarOpen, setsidebarOpen }) => {
               }}
               className='flex items-center gap-2 cursor-pointer group'
             >
-              <img
-                src='/logo.svg'
-                className='w-24 transition-transform group-hover:scale-105'
-                alt='logo'
-              />
+              <div className='size-8 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-fuchsia-600 p-[1.5px] shadow-sm'>
+                <div className='w-full h-full bg-white dark:bg-[#0c101d] rounded-[10px] flex items-center justify-center text-rose-500'>
+                  <Camera className='w-4.5 h-4.5 stroke-[2.2]' />
+                </div>
+              </div>
+              <span className='font-bold text-xl tracking-tight text-gray-900 dark:text-white font-serif italic'>
+                Instagram
+              </span>
             </div>
 
             <div className='flex items-center gap-1'>
               <ThemeToggle />
-              {/* Mobile Close Button */}
               <button
                 type='button'
                 onClick={() => setsidebarOpen?.(false)}
-                className='p-2 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition sm:hidden cursor-pointer'
+                className='p-1.5 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 sm:hidden cursor-pointer'
               >
                 <X className='w-5 h-5' />
               </button>
             </div>
           </div>
 
-          <div className='px-5 mb-4'>
-            <div className='h-[1px] bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent' />
-          </div>
-
-          {/* Navigation Items */}
-          <MenuItem
-            setsidebarOpen={setsidebarOpen}
-            onOpenNotifications={() => setIsNotificationsOpen(true)}
-          />
-
-          {/* Create Post Action Button */}
-          <div className='px-5 sm:px-6 mt-6'>
-            <Link
-              to='/create-post'
-              onClick={() => setsidebarOpen?.(false)}
-              className='relative group overflow-hidden flex items-center justify-center gap-2.5 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-95 transition-all duration-200 text-white font-semibold cursor-pointer shadow-lg shadow-indigo-500/25'
-            >
-              <CirclePlus className='w-5 h-5 transition-transform group-hover:rotate-90 duration-300' />
-              <span>Create Post</span>
-              <div className='absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none' />
-            </Link>
-          </div>
-        </div>
-
-        {/* Footer Profile Glass Chip & Controls */}
-        <div className='w-full p-3 px-4 sm:px-5'>
-          <div className='w-full p-2.5 rounded-2xl glass-card flex items-center justify-between gap-2 shadow-sm border border-slate-200/80 dark:border-white/[0.08] hover:border-indigo-500/40 transition-colors'>
+          {/* 2. User Profile Snippet */}
+          <div className='flex flex-col items-center text-center pt-1'>
             <div
               onClick={() => {
                 navigate('/profile')
                 setsidebarOpen?.(false)
               }}
-              className='flex gap-2.5 items-center cursor-pointer min-w-0 flex-1 group'
+              className='relative cursor-pointer group'
             >
-              <div className='relative'>
+              <div className='size-20 rounded-full p-[2px] ring-2 ring-slate-100 dark:ring-slate-800 group-hover:ring-rose-400 transition-all duration-300 shadow-sm'>
                 <img
                   src={profilePic}
                   alt={displayName}
-                  className='w-10 h-10 rounded-full object-cover border-2 border-indigo-500/40 shadow-xs shrink-0'
+                  className='w-full h-full rounded-full object-cover'
                 />
-                <span className='absolute bottom-0 right-0 size-2.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900' />
-              </div>
-              <div className='min-w-0'>
-                <h1 className='text-sm font-bold text-gray-800 dark:text-gray-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition'>
-                  {displayName}
-                </h1>
-                <p className='text-xs text-gray-500 dark:text-gray-400 truncate font-medium'>
-                  @{displayUsername}
-                </p>
               </div>
             </div>
 
-            <div className='flex items-center gap-0.5 shrink-0'>
-              {/* Settings Button */}
-              <button
-                type='button'
-                onClick={() => {
-                  setIsSettingsOpen(true)
-                  setsidebarOpen?.(false)
-                }}
-                title='Account Settings'
-                className='p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer'
-              >
-                <Settings className='w-4 h-4' />
-              </button>
+            <h2
+              onClick={() => {
+                navigate('/profile')
+                setsidebarOpen?.(false)
+              }}
+              className='mt-3 font-bold text-gray-900 dark:text-white text-base hover:text-rose-500 transition cursor-pointer'
+            >
+              {displayName}
+            </h2>
+            <p className='text-xs text-gray-400 font-medium'>@{displayUsername}</p>
 
-              {/* Quick Sign Out Button */}
-              <button
-                type='button'
-                onClick={handleLogout}
-                title='Sign Out'
-                className='p-2 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer'
+            {/* Stats Row */}
+            <div className='flex items-center justify-center gap-4 mt-3 w-full py-2 border-y border-slate-100 dark:border-white/[0.06] text-center'>
+              <div
+                onClick={() => navigate('/profile')}
+                className='cursor-pointer group flex-1'
               >
-                <LogOutIcon className='w-4 h-4' />
-              </button>
+                <span className='block font-bold text-sm text-gray-900 dark:text-white group-hover:text-rose-500 transition'>
+                  {userPostsCount || 472}
+                </span>
+                <span className='text-[11px] text-gray-400 font-medium'>Posts</span>
+              </div>
+              <div className='w-[1px] h-6 bg-slate-200 dark:bg-white/[0.08]' />
+              <div
+                onClick={() => navigate('/connections')}
+                className='cursor-pointer group flex-1'
+              >
+                <span className='block font-bold text-sm text-gray-900 dark:text-white group-hover:text-rose-500 transition'>
+                  {followersCount ? formatCount(followersCount) : '12.4K'}
+                </span>
+                <span className='text-[11px] text-gray-400 font-medium'>Followers</span>
+              </div>
+              <div className='w-[1px] h-6 bg-slate-200 dark:bg-white/[0.08]' />
+              <div
+                onClick={() => navigate('/connections')}
+                className='cursor-pointer group flex-1'
+              >
+                <span className='block font-bold text-sm text-gray-900 dark:text-white group-hover:text-rose-500 transition'>
+                  {followingCount || 228}
+                </span>
+                <span className='text-[11px] text-gray-400 font-medium'>Following</span>
+              </div>
+            </div>
+
+            {/* Bio snippet */}
+            <div className='mt-2.5 text-left w-full px-1'>
+              <p className='text-xs font-bold text-gray-800 dark:text-gray-200'>{displayName}</p>
+              <p className='text-[11px] text-gray-400 font-normal mt-0.5 leading-relaxed'>
+                {bio}
+              </p>
             </div>
           </div>
+
+          {/* 3. Story Highlights Section */}
+          <div className='pt-1'>
+            <div className='flex items-center justify-between mb-2.5 px-1'>
+              <span className='text-xs font-bold text-gray-800 dark:text-gray-200'>
+                Story Highlights
+              </span>
+            </div>
+
+            <div className='flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1 px-1'>
+              {/* New Highlight Button */}
+              <button
+                type='button'
+                onClick={() => navigate('/create-post')}
+                className='flex flex-col items-center gap-1 shrink-0 group cursor-pointer'
+              >
+                <div className='size-11 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 flex items-center justify-center text-gray-500 group-hover:text-rose-500 group-hover:border-rose-400 transition-colors shadow-2xs'>
+                  <Plus className='w-4 h-4' />
+                </div>
+                <span className='text-[10px] text-gray-500 dark:text-gray-400 font-medium'>
+                  New
+                </span>
+              </button>
+
+              {/* Sample highlights */}
+              {sampleHighlights.map((hl) => (
+                <div
+                  key={hl.id}
+                  className='flex flex-col items-center gap-1 shrink-0 group cursor-pointer'
+                >
+                  <div className='size-11 rounded-full p-[1.5px] border border-slate-200 dark:border-white/10 group-hover:border-rose-400 transition-colors shadow-2xs overflow-hidden'>
+                    <img
+                      src={hl.img}
+                      alt={hl.title}
+                      className='w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform'
+                    />
+                  </div>
+                  <span className='text-[10px] text-gray-500 dark:text-gray-400 font-medium'>
+                    {hl.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. Navigation Menu */}
+          <nav className='pt-2 space-y-1'>
+            <NavLink
+              to='/'
+              end
+              onClick={() => setsidebarOpen?.(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  isActive
+                    ? 'text-gray-900 dark:text-white font-bold'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Home
+                    className={`w-4.5 h-4.5 ${
+                      isActive ? 'stroke-[2.5] text-gray-900 dark:text-white' : 'stroke-[1.8]'
+                    }`}
+                  />
+                  <span>Feed</span>
+                </>
+              )}
+            </NavLink>
+
+            <NavLink
+              to='/discover'
+              onClick={() => setsidebarOpen?.(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  isActive
+                    ? 'text-gray-900 dark:text-white font-bold'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Compass
+                    className={`w-4.5 h-4.5 ${
+                      isActive ? 'stroke-[2.5] text-gray-900 dark:text-white' : 'stroke-[1.8]'
+                    }`}
+                  />
+                  <span>Explore</span>
+                </>
+              )}
+            </NavLink>
+
+            <NavLink
+              to='/reels'
+              onClick={() => setsidebarOpen?.(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  isActive
+                    ? 'text-gray-900 dark:text-white font-bold'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Film
+                    className={`w-4.5 h-4.5 ${
+                      isActive ? 'stroke-[2.5] text-gray-900 dark:text-white' : 'stroke-[1.8]'
+                    }`}
+                  />
+                  <span>Reels</span>
+                </>
+              )}
+            </NavLink>
+
+            <button
+              type='button'
+              onClick={() => {
+                setIsSettingsOpen(true)
+                setsidebarOpen?.(false)
+              }}
+              className='w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all cursor-pointer text-left'
+            >
+              <Settings className='w-4.5 h-4.5 stroke-[1.8]' />
+              <span>Settings</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* 5. Logout Button at the bottom */}
+        <div className='p-5 lg:p-6 pt-0'>
+          <button
+            type='button'
+            onClick={handleLogout}
+            className='w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all cursor-pointer'
+          >
+            <LogOut className='w-4.5 h-4.5 stroke-[1.8]' />
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
 

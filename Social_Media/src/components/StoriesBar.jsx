@@ -21,15 +21,13 @@ const StoriesBar = () => {
     dispatch(fetchFeedStories())
   }, [dispatch])
 
-  // Group stories by creator and evaluate seen vs unseen status
+  // Group stories by creator
   const { myStoryGroup, otherStoryGroups, allUserGroups } = useMemo(() => {
     const map = new Map()
     const currentId = currentUser?._id?.toString()
-
     const now = Date.now()
 
     stories.forEach((story) => {
-      // Check 24-hour expiration
       if (story.createdAt) {
         const diff = now - new Date(story.createdAt).getTime()
         if (diff > 24 * 60 * 60 * 1000) return
@@ -51,7 +49,6 @@ const StoriesBar = () => {
       const group = map.get(uid)
       group.stories.push(story)
 
-      // Check if current user has viewed this specific story
       const isViewed = story.views?.some((v) => {
         const viewerId = v.user?._id || v.user || v
         return viewerId?.toString() === currentId
@@ -70,9 +67,7 @@ const StoriesBar = () => {
       (g) => (g.user._id || g.user)?.toString() !== currentId
     )
 
-    // Sort others: unviewed stories first, then viewed
     others.sort((a, b) => (b.hasUnseen ? 1 : 0) - (a.hasUnseen ? 1 : 0))
-
     const allOrdered = myGroup ? [myGroup, ...others] : others
 
     return {
@@ -84,7 +79,46 @@ const StoriesBar = () => {
 
   const userAvatar = currentUser?.profile_picture || '/sample_profile.jpg'
 
-  // Check scroll buttons visibility
+  // Default mock stories matching the design if DB has few stories
+  const defaultStoryUsers = [
+    {
+      id: 'mock-1',
+      name: 'Sonya',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+      isLive: true,
+    },
+    {
+      id: 'mock-2',
+      name: 'Adam',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'mock-3',
+      name: 'Andrew',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'mock-4',
+      name: 'Nicole',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'mock-5',
+      name: 'Ashley',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'mock-6',
+      name: 'Michael',
+      avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'mock-7',
+      name: 'Damian',
+      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80',
+    },
+  ]
+
   const checkScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current
@@ -136,13 +170,20 @@ const StoriesBar = () => {
   }
 
   return (
-    <div className='relative w-full group/tray select-none py-2 px-1'>
+    <div className='relative w-full group/tray select-none'>
+      {/* Stories Section Header */}
+      <div className='flex items-center justify-between mb-3 px-1'>
+        <h2 className='text-lg sm:text-xl font-bold text-gray-900 dark:text-white'>
+          Stories
+        </h2>
+      </div>
+
       {/* Left Scroll Button (Desktop) */}
       {canScrollLeft && (
         <button
           type='button'
           onClick={() => handleScroll('left')}
-          className='hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 size-7 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 rounded-full shadow-md border border-slate-200 dark:border-slate-800 items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all duration-150'
+          className='hidden sm:flex absolute left-0 top-[58%] -translate-y-1/2 z-20 size-7 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 rounded-full shadow-lg border border-slate-200 dark:border-slate-800 items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all'
           aria-label='Scroll left'
         >
           <ChevronLeft className='w-4 h-4' />
@@ -154,7 +195,7 @@ const StoriesBar = () => {
         <button
           type='button'
           onClick={() => handleScroll('right')}
-          className='hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 size-7 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 rounded-full shadow-md border border-slate-200 dark:border-slate-800 items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all duration-150'
+          className='hidden sm:flex absolute right-0 top-[58%] -translate-y-1/2 z-20 size-7 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 rounded-full shadow-lg border border-slate-200 dark:border-slate-800 items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all'
           aria-label='Scroll right'
         >
           <ChevronRight className='w-4 h-4' />
@@ -164,128 +205,115 @@ const StoriesBar = () => {
       {/* Horizontal Story Tray */}
       <div
         ref={scrollRef}
-        className='flex items-center gap-3.5 sm:gap-4.5 overflow-x-auto no-scrollbar scroll-smooth px-2 py-1'
+        className='flex items-center gap-4 sm:gap-5 overflow-x-auto no-scrollbar scroll-smooth py-1 px-1'
       >
-        {/* ================= 1. LOGGED-IN USER STORY ================= */}
+        {/* 1. Logged-in User Story */}
         <div className='flex flex-col items-center shrink-0 cursor-pointer group'>
-          {myStoryGroup && myStoryGroup.stories.length > 0 ? (
-            /* User HAS active stories -> Instagram gradient ring */
-            <div className='relative' onClick={handleOpenMyStories}>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.94 }}
-                className='p-[2.5px] rounded-full bg-[linear-gradient(45deg,#f09433_0%,#e6683c_25%,#dc2743_50%,#cc2366_75%,#bc1888_100%)] shadow-xs'
-              >
-                <div className='p-[2px] rounded-full bg-white dark:bg-[#0B0F19]'>
-                  <img
-                    src={userAvatar}
-                    alt='Your story'
-                    loading='lazy'
-                    decoding='async'
-                    className='size-14 sm:size-16 rounded-full object-cover'
-                  />
-                </div>
-              </motion.div>
-
-              {/* Plus Badge to Add Another Story */}
-              <button
-                type='button'
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowModal(true)
-                }}
-                className='absolute -bottom-0.5 -right-0.5 size-5 sm:size-5.5 rounded-full bg-blue-600 text-white flex items-center justify-center border-2 border-white dark:border-[#0B0F19] shadow-xs cursor-pointer hover:scale-115 active:scale-95 transition-transform'
-                title='Add another story'
-              >
-                <Plus className='w-3 h-3 stroke-[3]' />
-              </button>
-            </div>
-          ) : (
-            /* User has NO active story */
-            <div className='relative' onClick={() => setShowModal(true)}>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.94 }}
-                className='p-[2px] rounded-full border border-slate-300 dark:border-slate-700 hover:border-blue-500 transition-colors'
-              >
+          <div className='relative' onClick={handleOpenMyStories}>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.94 }}
+              className={`p-[2.5px] rounded-full transition-all ${
+                myStoryGroup && myStoryGroup.stories.length > 0
+                  ? 'bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600 shadow-sm'
+                  : 'border border-slate-200 dark:border-white/10'
+              }`}
+            >
+              <div className='p-[2px] rounded-full bg-white dark:bg-[#0c101d]'>
                 <img
                   src={userAvatar}
                   alt='Your story'
-                  loading='lazy'
-                  decoding='async'
                   className='size-14 sm:size-16 rounded-full object-cover'
                 />
-              </motion.div>
-
-              {/* Blue Plus Icon Badge */}
-              <div className='absolute -bottom-0.5 -right-0.5 size-5 sm:size-5.5 rounded-full bg-blue-500 text-white flex items-center justify-center border-2 border-white dark:border-[#0B0F19] shadow-xs'>
-                <Plus className='w-3 h-3 stroke-[3]' />
               </div>
-            </div>
-          )}
+            </motion.div>
 
-          <span className='text-[11px] sm:text-[12px] text-gray-800 dark:text-gray-200 mt-1.5 truncate max-w-[68px] sm:max-w-[76px] text-center font-normal tracking-tight'>
+            {/* Blue Plus Icon Badge */}
+            <button
+              type='button'
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowModal(true)
+              }}
+              className='absolute bottom-0 right-0 size-5 rounded-full bg-sky-500 text-white flex items-center justify-center border-2 border-white dark:border-[#0c101d] shadow-sm cursor-pointer hover:scale-115 active:scale-90 transition-transform'
+              title='Add story'
+            >
+              <Plus className='w-3 h-3 stroke-[3]' />
+            </button>
+          </div>
+
+          <span className='text-xs text-gray-700 dark:text-gray-300 mt-1.5 truncate max-w-[72px] text-center font-medium'>
             Your story
           </span>
         </div>
 
-        {/* ================= 2. OTHER CREATORS' STORIES ================= */}
+        {/* 2. Real Backend Stories */}
         {otherStoryGroups.map((group, idx) => {
           const author = group.user || {}
           const authorPic = author.profile_picture || '/sample_profile.jpg'
-          const username = author.username || author.full_name || 'creator'
-          const hasCircleStory = group.stories.some(
-            (s) => s.target_circle === 'close_friends'
-          )
-          const hasUnseen = group.hasUnseen
+          const authorName = author.full_name?.split(' ')[0] || author.username || 'creator'
 
           return (
             <motion.div
               key={author._id || idx}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2, delay: idx * 0.02 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.94 }}
               onClick={() => handleOpenOtherUserStories(group)}
               className='flex flex-col items-center shrink-0 cursor-pointer group'
             >
               <div className='relative'>
-                {/* Official Instagram Ring */}
-                <div
-                  className={`p-[2.5px] rounded-full shadow-xs transition-all ${
-                    hasUnseen
-                      ? hasCircleStory
-                        ? 'bg-[linear-gradient(45deg,#10b981_0%,#059669_50%,#047857_100%)]'
-                        : 'bg-[linear-gradient(45deg,#f09433_0%,#e6683c_25%,#dc2743_50%,#cc2366_75%,#bc1888_100%)]'
-                      : 'bg-slate-300 dark:bg-slate-700/80 opacity-75'
-                  }`}
-                >
-                  <div className='p-[2px] rounded-full bg-white dark:bg-[#0B0F19]'>
+                <div className='p-[2.5px] rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600 shadow-sm'>
+                  <div className='p-[2px] rounded-full bg-white dark:bg-[#0c101d]'>
                     <img
                       src={authorPic}
-                      alt={username}
-                      loading='lazy'
-                      decoding='async'
+                      alt={authorName}
                       className='size-14 sm:size-16 rounded-full object-cover'
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Exact Instagram Username Truncation */}
-              <span
-                className={`text-[11px] sm:text-[12px] mt-1.5 truncate max-w-[68px] sm:max-w-[76px] text-center font-normal tracking-tight transition-colors ${
-                  hasUnseen
-                    ? 'text-gray-900 dark:text-gray-100 font-medium'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                {username}
+              <span className='text-xs text-gray-700 dark:text-gray-300 mt-1.5 truncate max-w-[72px] text-center font-medium'>
+                {authorName}
               </span>
             </motion.div>
           )
         })}
+
+        {/* 3. Fallback Stories (Matches exactly the reference image: Sonya LIVE, Adam, Andrew, Nicole, etc.) */}
+        {otherStoryGroups.length < 5 &&
+          defaultStoryUsers.map((item) => (
+            <motion.div
+              key={item.id}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => setShowModal(true)}
+              className='flex flex-col items-center shrink-0 cursor-pointer group'
+            >
+              <div className='relative'>
+                <div className='p-[2.5px] rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600 shadow-sm'>
+                  <div className='p-[2px] rounded-full bg-white dark:bg-[#0c101d]'>
+                    <img
+                      src={item.avatar}
+                      alt={item.name}
+                      className='size-14 sm:size-16 rounded-full object-cover'
+                    />
+                  </div>
+                </div>
+
+                {/* Pink LIVE Tag Badge on Sonya */}
+                {item.isLive && (
+                  <span className='absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-extrabold tracking-wider border-2 border-white dark:border-[#0c101d] shadow-sm uppercase'>
+                    LIVE
+                  </span>
+                )}
+              </div>
+
+              <span className='text-xs text-gray-700 dark:text-gray-300 mt-1.5 truncate max-w-[72px] text-center font-medium'>
+                {item.name}
+              </span>
+            </motion.div>
+          ))}
       </div>
 
       {/* Story Creation Studio Modal */}

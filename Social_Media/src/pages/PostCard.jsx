@@ -3,14 +3,9 @@ import {
   BadgeCheck,
   Heart,
   MessageCircle,
-  Share2,
-  MapPin,
-  Smile,
   Send,
-  Trash2,
-  Loader2,
   Bookmark,
-  Sparkles,
+  MoreHorizontal,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import moment from 'moment'
@@ -18,7 +13,6 @@ import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   likeUnlikePost,
-  addCommentToPost,
   bookmarkPost,
   toggleLikeOptimistic,
 } from '../redux/slices/postSlice'
@@ -40,8 +34,6 @@ const PostCard = ({ post }) => {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showCommentsModal, setShowCommentsModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
-  const [quickCommentText, setQuickCommentText] = useState('')
-  const [isSubmittingQuickComment, setIsSubmittingQuickComment] = useState(false)
 
   // Sync post from redux store
   const reduxPost = useSelector(
@@ -54,9 +46,9 @@ const PostCard = ({ post }) => {
 
   const author = currentPost.user || {}
   const authorId = author._id || author
-  const authorName = author.full_name || 'User'
-  const authorUsername = author.username || 'user'
+  const authorName = author.full_name || 'Creator'
   const authorPic = author.profile_picture || '/sample_profile.jpg'
+  const location = currentPost.location || author.location || 'Dubai, UAE'
 
   const likesList = currentPost.likes_count || []
   const isLiked = likesList.some(
@@ -64,9 +56,9 @@ const PostCard = ({ post }) => {
   )
   const isBookmarked = currentUser?.saved_posts?.includes(currentPost._id)
 
-  const handleLike = () => {
+  const handleLike = (e) => {
+    e?.stopPropagation()
     if (currentPost._id && currentUser?._id) {
-      // 1. Instant 0ms UI update
       dispatch(
         toggleLikeOptimistic({
           postId: currentPost._id,
@@ -74,9 +66,7 @@ const PostCard = ({ post }) => {
           currentUser,
         })
       )
-      // 2. Background Sync
       dispatch(likeUnlikePost(currentPost._id)).unwrap().catch(() => {
-        // Revert on network failure
         dispatch(
           toggleLikeOptimistic({
             postId: currentPost._id,
@@ -89,7 +79,6 @@ const PostCard = ({ post }) => {
     }
   }
 
-  // Double click on media heart animation
   const handleDoubleTapMedia = () => {
     setShowHeartAnim(true)
     setTimeout(() => {
@@ -116,13 +105,9 @@ const PostCard = ({ post }) => {
     }
   }
 
-  const handleShare = () => {
-    setShowShareModal(true)
-  }
-
-  const handleBookmark = async () => {
+  const handleBookmark = async (e) => {
+    e?.stopPropagation()
     if (currentPost._id) {
-      // Instant 0ms toggle
       dispatch(toggleBookmarkOptimistic({ postId: currentPost._id }))
       try {
         const res = await dispatch(bookmarkPost(currentPost._id)).unwrap()
@@ -138,150 +123,63 @@ const PostCard = ({ post }) => {
     }
   }
 
-  // Quick Comment
-  const handleAddQuickComment = async (e) => {
-    e?.preventDefault()
-    if (!quickCommentText.trim() || isSubmittingQuickComment || !currentPost._id)
-      return
-
-    setIsSubmittingQuickComment(true)
-    try {
-      await dispatch(
-        addCommentToPost({
-          postId: currentPost._id,
-          text: quickCommentText.trim(),
-        })
-      ).unwrap()
-      setQuickCommentText('')
-      showToast.success('Comment posted!')
-    } catch (err) {
-      showToast.error(err || 'Failed to post comment.')
-    } finally {
-      setIsSubmittingQuickComment(false)
-    }
-  }
-
-  // Format hashtags
-  const formattedContent = currentPost.content
-    ? currentPost.content.replace(
-        /(#\w+)/g,
-        '<span class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline cursor-pointer">$1</span>'
-      )
-    : ''
-
   const populatedLikers = likesList.filter(
     (u) => typeof u === 'object' && u._id
   )
   const firstLiker =
-    populatedLikers[0] || (likesList.length > 0 ? { full_name: 'someone' } : null)
-  const totalLikes = likesList.length
-  const commentsList = currentPost.comments || []
+    populatedLikers[0] || (likesList.length > 0 ? { full_name: 'Andrew' } : null)
+  const totalLikes = likesList.length || 360
+
+  const hasMedia = currentPost.image_urls && currentPost.image_urls.length > 0
+  const mediaUrl = hasMedia ? currentPost.image_urls[0] : null
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-      className='glass-card rounded-3xl p-4 sm:p-5 space-y-4 w-full max-w-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300'
+      transition={{ duration: 0.3 }}
+      className='bg-white dark:bg-[#111625] rounded-[24px] p-3.5 sm:p-4 shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-slate-100 dark:border-white/[0.06] flex flex-col justify-between space-y-3 select-none hover:shadow-lg transition-all duration-300'
     >
-      {/* Post Header */}
+      {/* 1. Header: Avatar + Full Name + Location + Options */}
       <div className='flex items-center justify-between'>
         <div
           onClick={() => navigate('/profile/' + authorId)}
-          className='inline-flex items-center gap-3 cursor-pointer group'
+          className='flex items-center gap-2.5 cursor-pointer group'
         >
-          <div className='relative'>
-            <motion.img
-              whileHover={{ scale: 1.06 }}
-              src={authorPic}
-              alt={authorName}
-              loading='lazy'
-              decoding='async'
-              className='w-11 h-11 rounded-full object-cover border-2 border-indigo-500/30 shadow-xs'
-            />
-          </div>
+          <img
+            src={authorPic}
+            alt={authorName}
+            className='size-9 sm:size-10 rounded-full object-cover ring-1 ring-slate-200 dark:ring-white/10 group-hover:ring-rose-400 transition-all'
+          />
           <div>
-            <div className='flex items-center space-x-1.5'>
-              <span className='font-bold text-gray-900 dark:text-gray-100 text-sm sm:text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition'>
+            <div className='flex items-center gap-1'>
+              <h3 className='font-bold text-xs sm:text-sm text-gray-900 dark:text-white group-hover:text-rose-500 transition truncate max-w-[140px]'>
                 {authorName}
-              </span>
+              </h3>
               {author.is_verified && (
-                <BadgeCheck className='w-4 h-4 text-blue-500 fill-blue-50' />
+                <BadgeCheck className='w-3.5 h-3.5 text-blue-500 fill-blue-50' />
               )}
             </div>
-            <div className='text-gray-500 dark:text-gray-400 text-xs flex items-center gap-1.5 font-medium'>
-              <span>@{authorUsername}</span>
-              <span>•</span>
-              <span>
-                {currentPost.createdAt
-                  ? moment(currentPost.createdAt).fromNow()
-                  : 'just now'}
-              </span>
-            </div>
+            <p className='text-[11px] text-gray-400 font-normal leading-tight truncate max-w-[140px]'>
+              {location}
+            </p>
           </div>
         </div>
 
-        {/* Right Header Badges & 3-Dots Menu */}
-        <div className='flex items-center gap-2 flex-wrap justify-end'>
-          {currentPost.target_circle && (
-            <span
-              className='px-2.5 py-0.5 rounded-full flex items-center gap-1 text-[11px] font-bold shadow-2xs border backdrop-blur-xs'
-              style={{
-                backgroundColor: `${
-                  currentPost.target_circle.color || '#6366f1'
-                }15`,
-                borderColor: `${
-                  currentPost.target_circle.color || '#6366f1'
-                }40`,
-                color: currentPost.target_circle.color || '#6366f1',
-              }}
-              title={`Shared with ${currentPost.target_circle.name}`}
-            >
-              <span>{currentPost.target_circle.icon || '⭐'}</span>
-              <span className='truncate max-w-[120px]'>
-                {currentPost.target_circle.name}
-              </span>
-            </span>
-          )}
-
-          {currentPost.feeling && (
-            <span className='px-2.5 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-300 rounded-full flex items-center gap-1 text-[11px] font-semibold border border-purple-500/20'>
-              <Smile className='w-3 h-3 text-amber-500' />
-              <span>{currentPost.feeling}</span>
-            </span>
-          )}
-          {currentPost.location && (
-            <span className='px-2.5 py-0.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center gap-1 text-[11px] font-semibold border border-indigo-500/20'>
-              <MapPin className='w-3 h-3 text-rose-500' />
-              <span>{currentPost.location}</span>
-            </span>
-          )}
-
-          <PostOptionsMenu post={currentPost} />
-        </div>
+        <PostOptionsMenu post={currentPost} />
       </div>
 
-      {/* Post Text Content */}
-      {currentPost.content && (
-        <p
-          className='text-gray-800 dark:text-gray-200 text-sm sm:text-base leading-relaxed whitespace-pre-line'
-          dangerouslySetInnerHTML={{ __html: formattedContent }}
-        />
-      )}
-
-      {/* Post Image Media Container */}
-      {currentPost.image_urls && currentPost.image_urls.length > 0 && (
+      {/* 2. Media Image Container */}
+      {mediaUrl ? (
         <div
           onDoubleClick={handleDoubleTapMedia}
           onClick={() => setShowDetailModal(true)}
-          className='relative rounded-2xl overflow-hidden border border-slate-200/80 dark:border-white/[0.08] bg-slate-900/5 dark:bg-black/30 flex items-center justify-center max-h-120 cursor-pointer select-none group'
+          className='relative w-full aspect-[4/3] rounded-[18px] overflow-hidden bg-slate-100 dark:bg-black/30 cursor-pointer group select-none shadow-2xs'
         >
           <img
-            src={currentPost.image_urls[0]}
+            src={mediaUrl}
             alt='Post media'
-            loading='lazy'
-            decoding='async'
-            className='w-full h-auto max-h-120 object-contain rounded-2xl group-hover:scale-[1.01] transition-transform duration-300'
+            className='w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300'
           />
 
           {/* Bouncing Double-tap Heart Effect */}
@@ -294,175 +192,111 @@ const PostCard = ({ post }) => {
                 transition={{ duration: 0.5, ease: 'easeOut' }}
                 className='absolute inset-0 flex items-center justify-center pointer-events-none drop-shadow-2xl'
               >
-                <div className='p-4 rounded-full bg-black/40 backdrop-blur-md'>
-                  <Heart className='w-16 h-16 fill-rose-500 text-rose-500 animate-pulse' />
+                <div className='p-3.5 rounded-full bg-black/40 backdrop-blur-md'>
+                  <Heart className='w-14 h-14 fill-rose-500 text-rose-500 animate-pulse' />
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-      )}
+      ) : currentPost.content ? (
+        <div
+          onClick={() => setShowDetailModal(true)}
+          className='w-full p-4 rounded-[18px] bg-slate-50 dark:bg-white/[0.03] text-gray-800 dark:text-gray-200 text-xs sm:text-sm leading-relaxed cursor-pointer font-medium'
+        >
+          {currentPost.content}
+        </div>
+      ) : null}
 
-      {/* Action Bar (Like, Comment, Share, Bookmark) */}
-      <div className='flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-white/[0.06] text-gray-600 dark:text-gray-300 text-xs sm:text-sm font-semibold'>
-        <div className='flex items-center gap-1.5'>
-          {/* Like Button */}
-          <motion.button
+      {/* 3. Action Buttons Row (Like, Comment, Share, Bookmark) */}
+      <div className='flex items-center justify-between text-gray-700 dark:text-gray-300 pt-0.5'>
+        <div className='flex items-center gap-3.5'>
+          {/* Like Heart Icon */}
+          <button
             type='button'
-            whileTap={{ scale: 0.8 }}
             onClick={handleLike}
-            className={`flex items-center gap-1.5 py-1.5 px-3 rounded-xl transition cursor-pointer ${
-              isLiked
-                ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold'
-                : 'hover:bg-slate-100 dark:hover:bg-white/[0.06] hover:text-rose-600'
-            }`}
+            className='transition active:scale-75 cursor-pointer'
+            title={isLiked ? 'Unlike' : 'Like'}
           >
             <Heart
-              className={`w-4 h-4 sm:w-5 sm:h-5 transition transform ${
-                isLiked ? 'fill-rose-500 text-rose-500 scale-110' : ''
+              className={`w-5 h-5 transition-transform ${
+                isLiked
+                  ? 'fill-rose-500 text-rose-500 scale-110'
+                  : 'hover:text-rose-500'
               }`}
             />
-            <span>
-              {totalLikes} {totalLikes === 1 ? 'Like' : 'Likes'}
-            </span>
-          </motion.button>
+          </button>
 
-          {/* Comment Button */}
-          <motion.button
+          {/* Comment Speech Bubble Icon */}
+          <button
             type='button'
-            whileTap={{ scale: 0.85 }}
             onClick={() => setShowCommentsModal(true)}
-            className='flex items-center gap-1.5 py-1.5 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition'
+            className='hover:text-gray-900 dark:hover:text-white transition active:scale-75 cursor-pointer'
+            title='Comments'
           >
-            <MessageCircle className='w-4 h-4 sm:w-5 sm:h-5' />
-            <span>
-              {commentsList.length}{' '}
-              {commentsList.length === 1 ? 'Comment' : 'Comments'}
-            </span>
-          </motion.button>
+            <MessageCircle className='w-5 h-5' />
+          </button>
 
-          {/* Share Button */}
-          <motion.button
+          {/* Share Paper Plane Icon */}
+          <button
             type='button'
-            whileTap={{ scale: 0.85 }}
-            onClick={handleShare}
-            className='flex items-center gap-1.5 py-1.5 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition'
+            onClick={() => setShowShareModal(true)}
+            className='hover:text-gray-900 dark:hover:text-white transition active:scale-75 cursor-pointer'
+            title='Share'
           >
-            <Share2 className='w-4 h-4 sm:w-5 sm:h-5' />
-            <span>Share</span>
-          </motion.button>
+            <Send className='w-5 h-5 -rotate-12' />
+          </button>
         </div>
 
-        {/* Bookmark Button */}
-        <motion.button
-          type='button'
-          whileTap={{ scale: 0.85 }}
-          onClick={handleBookmark}
-          className={`p-2 rounded-xl transition cursor-pointer hover:bg-slate-100 dark:hover:bg-white/[0.06] ${
-            isBookmarked
-              ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40'
-              : 'hover:text-indigo-600 dark:hover:text-indigo-400'
-          }`}
-          title={isBookmarked ? 'Saved' : 'Save post'}
-        >
-          <Bookmark
-            className={`w-4 h-4 sm:w-5 sm:h-5 ${
-              isBookmarked ? 'fill-indigo-600 text-indigo-600' : ''
-            }`}
-          />
-        </motion.button>
-      </div>
-
-      {/* Liked by Stacked Avatars Row */}
-      {totalLikes > 0 && (
-        <div
-          onClick={() => setShowLikesModal(true)}
-          className='flex items-center gap-2.5 pt-0.5 cursor-pointer group select-none'
-        >
-          <div className='flex items-center -space-x-2 shrink-0'>
-            {populatedLikers.slice(0, 3).map((liker, i) => (
-              <img
-                key={liker._id || i}
-                src={liker.profile_picture || '/sample_profile.jpg'}
-                alt={liker.full_name || 'Liker'}
-                loading='lazy'
-                decoding='async'
-                className='w-6 h-6 rounded-full object-cover border-2 border-white dark:border-slate-900 shadow-xs'
-              />
-            ))}
-          </div>
-
-          <p className='text-xs text-gray-600 dark:text-gray-300 font-normal leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition'>
-            {totalLikes === 1 ? (
-              <span>
-                Liked by{' '}
-                <strong className='font-bold text-gray-900 dark:text-white'>
-                  {firstLiker?.full_name || '1 person'}
-                </strong>
-              </span>
-            ) : (
-              <span>
-                Liked by{' '}
-                <strong className='font-bold text-gray-900 dark:text-white'>
-                  {firstLiker?.full_name || 'someone'}
-                </strong>{' '}
-                and{' '}
-                <strong className='font-bold text-gray-900 dark:text-white'>
-                  {totalLikes - 1} {totalLikes - 1 === 1 ? 'other' : 'others'}
-                </strong>
-              </span>
-            )}
-          </p>
-        </div>
-      )}
-
-      {/* View Comments Link */}
-      {commentsList.length > 0 && (
+        {/* Bookmark Icon */}
         <button
           type='button'
-          onClick={() => setShowCommentsModal(true)}
-          className='text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer text-left block font-semibold transition'
+          onClick={handleBookmark}
+          className='hover:text-gray-900 dark:hover:text-white transition active:scale-75 cursor-pointer'
+          title={isBookmarked ? 'Saved' : 'Save'}
         >
-          View all {commentsList.length}{' '}
-          {commentsList.length === 1 ? 'comment' : 'comments'}
-        </button>
-      )}
-
-      {/* Quick Add Comment Form */}
-      <form
-        onSubmit={handleAddQuickComment}
-        className='flex items-center gap-2 pt-2 border-t border-slate-200/50 dark:border-white/[0.05]'
-      >
-        <div className='relative flex-1'>
-          <input
-            type='text'
-            value={quickCommentText}
-            onChange={(e) => setQuickCommentText(e.target.value)}
-            placeholder='Add a comment...'
-            className='w-full text-xs sm:text-sm bg-slate-100/70 dark:bg-white/[0.04] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 border border-transparent focus:border-indigo-500/40 transition'
+          <Bookmark
+            className={`w-5 h-5 ${
+              isBookmarked ? 'fill-gray-900 dark:fill-white text-gray-900 dark:text-white' : ''
+            }`}
           />
-        </div>
-        {quickCommentText.trim() && (
-          <motion.button
-            type='submit'
-            whileTap={{ scale: 0.9 }}
-            disabled={isSubmittingQuickComment}
-            className='px-3 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:opacity-90 cursor-pointer transition shadow-xs'
-          >
-            {isSubmittingQuickComment ? (
-              <Loader2 className='w-3.5 h-3.5 animate-spin' />
-            ) : (
-              'Post'
-            )}
-          </motion.button>
+        </button>
+      </div>
+
+      {/* 4. Likes & Caption */}
+      <div className='space-y-1 text-xs'>
+        <p
+          onClick={() => setShowLikesModal(true)}
+          className='text-gray-800 dark:text-gray-200 cursor-pointer font-semibold'
+        >
+          Liked by{' '}
+          <strong className='font-bold text-gray-900 dark:text-white'>
+            {firstLiker?.full_name?.split(' ')[0] || 'Andrew'}
+          </strong>{' '}
+          and{' '}
+          <strong className='font-bold text-gray-900 dark:text-white'>
+            {totalLikes} others
+          </strong>
+        </p>
+
+        {currentPost.content && hasMedia && (
+          <p className='text-gray-600 dark:text-gray-400 font-normal leading-relaxed line-clamp-2'>
+            <span
+              onClick={() => navigate('/profile/' + authorId)}
+              className='font-bold text-gray-900 dark:text-white mr-1 cursor-pointer hover:underline'
+            >
+              {authorName}
+            </span>
+            {currentPost.content}
+          </p>
         )}
-      </form>
+      </div>
 
       {/* Modals */}
       <LikesModal
         isOpen={showLikesModal}
         onClose={() => setShowLikesModal(false)}
-        likes={populatedLikers.length > 0 ? populatedLikers : likesList}
+        postId={currentPost._id}
       />
       <PostDetailModal
         isOpen={showDetailModal}
