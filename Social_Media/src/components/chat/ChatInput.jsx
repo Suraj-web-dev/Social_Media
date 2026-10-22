@@ -1,14 +1,35 @@
-import React, { useRef, useState } from 'react'
-import { Image as ImageIcon, Send, Smile, ThumbsUp, X } from 'lucide-react'
+import React, { useRef, useState, useEffect } from 'react'
+import {
+  Image as ImageIcon,
+  Send,
+  Smile,
+  ThumbsUp,
+  X,
+  Sparkles,
+  RotateCw,
+  Loader2,
+} from 'lucide-react'
 
 const quickEmojis = ['😊', '😂', '🔥', '❤️', '👍', '🎉', '🚀', '🙌']
 
-const ChatInput = ({ onSendMessage }) => {
+const ChatInput = ({
+  onSendMessage,
+  smartReplies = [],
+  loadingSmartReplies = false,
+  onRefreshSmartReplies,
+  externalText = '',
+}) => {
   const [text, setText] = useState('')
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    if (externalText) {
+      setText(externalText)
+    }
+  }, [externalText])
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
@@ -85,6 +106,45 @@ const ChatInput = ({ onSendMessage }) => {
           >
             <X className='w-3.5 h-3.5' />
           </button>
+        </div>
+      )}
+
+      {/* 1-Tap AI Smart Replies Bar */}
+      {smartReplies && smartReplies.length > 0 && (
+        <div className='mb-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 animate-in fade-in slide-in-from-bottom-1 duration-200'>
+          <div className='flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold shrink-0 border border-indigo-100 dark:border-indigo-900/40'>
+            <Sparkles className='w-3 h-3 text-indigo-500 animate-pulse' />
+            <span>AI Replies</span>
+          </div>
+
+          {smartReplies.map((reply, idx) => (
+            <button
+              key={idx}
+              type='button'
+              onClick={() => {
+                setText(reply)
+              }}
+              className='px-3 py-1 bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-300 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-700 transition cursor-pointer shrink-0 whitespace-nowrap active:scale-95 shadow-2xs'
+            >
+              {reply}
+            </button>
+          ))}
+
+          {onRefreshSmartReplies && (
+            <button
+              type='button'
+              onClick={onRefreshSmartReplies}
+              disabled={loadingSmartReplies}
+              title='Generate new AI suggestions'
+              className='p-1 rounded-full text-gray-400 hover:text-indigo-600 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0'
+            >
+              {loadingSmartReplies ? (
+                <Loader2 className='w-3.5 h-3.5 animate-spin text-indigo-500' />
+              ) : (
+                <RotateCw className='w-3.5 h-3.5' />
+              )}
+            </button>
+          )}
         </div>
       )}
 

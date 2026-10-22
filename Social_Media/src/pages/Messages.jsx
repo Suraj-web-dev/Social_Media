@@ -94,6 +94,42 @@ const Messages = () => {
             </h3>
           </div>
 
+          {/* Pinned PingAI AI Companion */}
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() => navigate('/messages/pingai')}
+            className='rounded-3xl p-4 border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-pink-950/20 shadow-xs hover:shadow-md hover:border-indigo-500/60 transition-all flex items-center justify-between gap-3.5 cursor-pointer relative overflow-hidden group'
+          >
+            <div className='flex items-center gap-3.5 flex-1 min-w-0'>
+              <div className='relative shrink-0'>
+                <div className='w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-500/40'>
+                  <Sparkles className='w-6 h-6 animate-pulse' />
+                </div>
+                <span className='absolute bottom-0 right-0 size-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full' />
+              </div>
+
+              <div className='flex-1 min-w-0'>
+                <div className='flex items-center gap-2'>
+                  <h4 className='font-bold text-gray-900 dark:text-gray-100 text-sm sm:text-base leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate'>
+                    PingAI
+                  </h4>
+                  <span className='px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 text-white tracking-wide shadow-xs'>
+                    AI BOT
+                  </span>
+                </div>
+                <p className='text-xs text-indigo-600 dark:text-indigo-300 font-medium truncate mt-0.5'>
+                  Your personal creative AI companion • Online 24/7 ✨
+                </p>
+              </div>
+            </div>
+
+            <div className='hidden sm:flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform'>
+              <span>Chat now</span>
+              <Sparkles className='w-3.5 h-3.5' />
+            </div>
+          </motion.div>
+
           <div className='space-y-2.5'>
             {filteredConversations.length > 0 ? (
               filteredConversations.map((conv) => {

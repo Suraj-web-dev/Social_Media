@@ -7,6 +7,7 @@ import {
   Send,
   Smile,
   X,
+  Sparkles,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
@@ -16,6 +17,7 @@ import PrivacySelector from '../components/PrivacySelector'
 import TrendingTags from '../components/TrendingTags'
 import FeelingsPicker from '../components/FeelingsPicker'
 import MediaPreview from '../components/MediaPreview'
+import AICaptionModal from '../components/AICaptionModal'
 
 const CreatePost = () => {
   const navigate = useNavigate()
@@ -34,6 +36,7 @@ const CreatePost = () => {
   const [showLocationInput, setShowLocationInput] = useState(false)
   const [selectedFeeling, setSelectedFeeling] = useState('')
   const [showFeelings, setShowFeelings] = useState(false)
+  const [showAIModal, setShowAIModal] = useState(false)
 
   const displayName = user?.full_name || 'User'
   const profilePic = user?.profile_picture || '/sample_profile.jpg'
@@ -286,6 +289,15 @@ const CreatePost = () => {
               <Smile className='w-4 h-4 text-amber-500' />
               <span>Feelings</span>
             </button>
+
+            <button
+              type='button'
+              onClick={() => setShowAIModal(true)}
+              className='flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:border-indigo-500/40 cursor-pointer transition shadow-xs'
+            >
+              <Sparkles className='w-4 h-4 text-indigo-500 animate-pulse' />
+              <span>AI Caption & Tags</span>
+            </button>
           </div>
 
           {/* Action Buttons */}
@@ -321,6 +333,16 @@ const CreatePost = () => {
           </div>
         </div>
       </div>
+
+      {/* AI Caption & Hashtags Modal */}
+      <AICaptionModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        currentText={content}
+        mediaFile={mediaFiles[0] || null}
+        onApplyCaption={(cap) => setContent(cap)}
+        onApplyHashtags={(tags) => handleAddTag(tags)}
+      />
     </div>
   )
 }

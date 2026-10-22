@@ -10,6 +10,7 @@ import storyRoutes from './src/routes/story.routes.js'
 import messageRoutes from './src/routes/message.routes.js'
 import notificationRoutes from './src/routes/notification.routes.js'
 import circleRoutes from './src/routes/circle.routes.js'
+import aiRoutes from './src/routes/ai.routes.js'
 import { app, server } from './src/socket/socket.js'
 
 // Load environment variables
@@ -80,6 +81,7 @@ app.use('/api/story', storyRoutes)
 app.use('/api/message', messageRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/circle', circleRoutes)
+app.use('/api/ai', aiRoutes)
 
 // Route Aliases (fallback without /api prefix to avoid 404 if frontend calls without /api)
 app.use('/auth', authRoutes)
@@ -89,6 +91,7 @@ app.use('/story', storyRoutes)
 app.use('/message', messageRoutes)
 app.use('/notifications', notificationRoutes)
 app.use('/circle', circleRoutes)
+app.use('/ai', aiRoutes)
 
 // Root / Health-check Route
 app.get('/', (req, res) => {

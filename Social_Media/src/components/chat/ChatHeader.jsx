@@ -8,7 +8,14 @@ const ChatHeader = ({ recipient }) => {
   const { onlineUsers } = useSelector((state) => state.message)
 
   const recipientId = (typeof recipient === 'object' ? recipient._id : recipient) || ''
-  const isOnline = onlineUsers.includes(recipientId.toString())
+  const isPingAI = recipientId === 'pingai'
+  const isOnline = isPingAI || onlineUsers.includes(recipientId.toString())
+
+  const handleProfileClick = () => {
+    if (!isPingAI && recipient._id) {
+      navigate(`/profile/${recipient._id}`)
+    }
+  }
 
   return (
     <div className='p-3 sm:p-4 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between shadow-xs sticky top-0 z-10'>
@@ -23,8 +30,8 @@ const ChatHeader = ({ recipient }) => {
         </button>
 
         <div
-          onClick={() => navigate(`/profile/${recipient._id}`)}
-          className='relative cursor-pointer'
+          onClick={handleProfileClick}
+          className={`relative ${isPingAI ? 'cursor-default' : 'cursor-pointer'}`}
         >
           <img
             src={recipient.profile_picture || '/sample_profile.jpg'}
@@ -41,14 +48,20 @@ const ChatHeader = ({ recipient }) => {
 
         <div>
           <div
-            onClick={() => navigate(`/profile/${recipient._id}`)}
-            className='flex items-center gap-1.5 cursor-pointer group'
+            onClick={handleProfileClick}
+            className={`flex items-center gap-1.5 ${isPingAI ? 'cursor-default' : 'cursor-pointer group'}`}
           >
             <h3 className='font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition'>
               {recipient.full_name || 'User'}
             </h3>
-            {recipient.is_verified && (
-              <BadgeCheck className='w-4 h-4 text-blue-500 fill-blue-50' />
+            {isPingAI ? (
+              <span className='px-1.5 py-0.5 text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-500/20'>
+                AI BOT
+              </span>
+            ) : (
+              recipient.is_verified && (
+                <BadgeCheck className='w-4 h-4 text-blue-500 fill-blue-50' />
+              )
             )}
           </div>
           <p
@@ -56,20 +69,22 @@ const ChatHeader = ({ recipient }) => {
               isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'
             }`}
           >
-            {isOnline ? 'Active now' : 'Offline'}
+            {isPingAI ? '⚡ Powered by Gemini AI • Active 24/7' : (isOnline ? 'Active now' : 'Offline')}
           </p>
         </div>
       </div>
 
       {/* Right: Actions */}
       <div className='flex items-center gap-1 sm:gap-2 text-gray-500 dark:text-gray-400'>
-        <button
-          title='View profile'
-          onClick={() => navigate(`/profile/${recipient._id}`)}
-          className='p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer'
-        >
-          <User className='w-4 h-4 sm:w-5 sm:h-5' />
-        </button>
+        {!isPingAI && (
+          <button
+            title='View profile'
+            onClick={handleProfileClick}
+            className='p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer'
+          >
+            <User className='w-4 h-4 sm:w-5 sm:h-5' />
+          </button>
+        )}
       </div>
     </div>
   )

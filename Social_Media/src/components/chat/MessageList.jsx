@@ -1,13 +1,27 @@
 import React, { useEffect, useRef } from 'react'
 import moment from 'moment'
-import { Check, CheckCheck, Film } from 'lucide-react'
+import { Check, CheckCheck, Film, Sparkles } from 'lucide-react'
 
-const MessageList = ({ messages, currentUserId, recipient }) => {
+const PINGAI_STARTERS = [
+  '💡 Brainstorm 3 viral reel ideas for tech lovers',
+  '✍️ Write a witty, high-converting bio for my profile',
+  '✨ What are current trending topics on PingUp?',
+  '🚀 Help me write a cool post about building an AI project',
+]
+
+const MessageList = ({
+  messages,
+  currentUserId,
+  recipient,
+  isAiThinking = false,
+  onSelectStarterPrompt,
+}) => {
   const bottomRef = useRef(null)
+  const isPingAI = recipient?._id === 'pingai'
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, isAiThinking])
 
   return (
     <div className='flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50 dark:bg-slate-950 no-scrollbar'>
@@ -136,6 +150,52 @@ const MessageList = ({ messages, currentUserId, recipient }) => {
           </div>
         )
       })}
+
+      {/* PingAI Thinking Animation */}
+      {isAiThinking && (
+        <div className='flex items-end gap-2 justify-start animate-in fade-in duration-200'>
+          <img
+            src={recipient.profile_picture || '/sample_profile.jpg'}
+            alt='PingAI'
+            className='w-7 h-7 rounded-full object-cover mb-1 border border-indigo-200 dark:border-indigo-800 shrink-0'
+          />
+          <div className='bg-white dark:bg-slate-900 border border-indigo-100 dark:border-slate-800 rounded-2xl rounded-bl-xs p-3 shadow-xs flex items-center gap-2'>
+            <div className='flex items-center gap-1'>
+              <span className='size-2 rounded-full bg-indigo-500 animate-bounce' style={{ animationDelay: '0ms' }} />
+              <span className='size-2 rounded-full bg-purple-500 animate-bounce' style={{ animationDelay: '150ms' }} />
+              <span className='size-2 rounded-full bg-pink-500 animate-bounce' style={{ animationDelay: '300ms' }} />
+            </div>
+            <span className='text-xs text-gray-500 dark:text-gray-400 font-medium'>
+              PingAI is crafting response...
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Starter Prompts for PingAI when conversation has 1 message */}
+      {isPingAI && messages.length <= 1 && (
+        <div className='pt-2 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300'>
+          <p className='text-xs font-semibold text-gray-400 dark:text-gray-500 text-center flex items-center justify-center gap-1'>
+            <Sparkles className='w-3.5 h-3.5 text-indigo-500' />
+            Try asking PingAI:
+          </p>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-xl mx-auto'>
+            {PINGAI_STARTERS.map((prompt, i) => (
+              <button
+                key={i}
+                type='button'
+                onClick={() => onSelectStarterPrompt && onSelectStarterPrompt(prompt)}
+                className='text-left p-2.5 rounded-xl border border-indigo-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50/50 text-xs font-medium text-gray-700 dark:text-gray-300 transition shadow-xs cursor-pointer flex items-center justify-between group'
+              >
+                <span>{prompt}</span>
+                <span className='text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity ml-1'>
+                  →
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div ref={bottomRef} />
     </div>

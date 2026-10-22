@@ -10,11 +10,15 @@ import {
   BadgeCheck,
   Send,
   MessageCircle,
+  Sparkles,
+  Wand2,
+  RotateCw,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import moment from 'moment'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
+import API from '../api/axios'
 import {
   addCommentToPost,
   deleteCommentFromPost,
@@ -37,6 +41,8 @@ const InstagramCommentsModal = ({ isOpen, onClose, post }) => {
   const [editingText, setEditingText] = useState('')
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false)
   const [deletingCommentId, setDeletingCommentId] = useState(null)
+  const [aiSmartReplies, setAiSmartReplies] = useState([])
+  const [loadingAiReplies, setLoadingAiReplies] = useState(false)
 
   const inputRef = useRef(null)
   const commentsEndRef = useRef(null)
@@ -50,10 +56,29 @@ const InstagramCommentsModal = ({ isOpen, onClose, post }) => {
   )
   const currentPost = reduxPost || post
 
+  const fetchSmartReplies = async () => {
+    const context = currentPost?.content || 'Awesome post!'
+    setLoadingAiReplies(true)
+    try {
+      const res = await API.post('/ai/smart-replies', {
+        context,
+        type: 'comment',
+      })
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        setAiSmartReplies(res.data.data)
+      }
+    } catch (err) {
+      console.warn('Failed to load comment smart replies:', err)
+    } finally {
+      setLoadingAiReplies(false)
+    }
+  }
+
   useEffect(() => {
     if (isOpen) {
       setCommentText('')
       setEditingCommentId(null)
+      fetchSmartReplies()
       setTimeout(() => {
         inputRef.current?.focus()
       }, 200)
@@ -443,6 +468,57 @@ const InstagramCommentsModal = ({ isOpen, onClose, post }) => {
               })}
               <div ref={commentsEndRef} />
             </div>
+          )}
+        </div>
+
+        {/* 1-Tap AI Smart Comment Suggestions */}
+        <div className='px-4 py-2 border-t border-slate-100 dark:border-slate-800 bg-indigo-50/50 dark:bg-slate-900/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar'>
+          <div className='flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 shrink-0 mr-1'>
+            <Sparkles className='w-3.5 h-3.5 text-indigo-500 animate-pulse' />
+            <span>AI Replies:</span>
+          </div>
+
+          {aiSmartReplies.length > 0 ? (
+            aiSmartReplies.map((reply, i) => (
+              <button
+                key={i}
+                type='button'
+                onClick={() => setCommentText(reply)}
+                className='px-3 py-1 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-300 text-xs font-medium rounded-full border border-slate-200 dark:border-slate-700 shadow-2xs transition cursor-pointer shrink-0 whitespace-nowrap active:scale-95'
+              >
+                {reply}
+              </button>
+            ))
+          ) : (
+            <button
+              type='button'
+              onClick={fetchSmartReplies}
+              disabled={loadingAiReplies}
+              className='px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-xs font-semibold flex items-center gap-1 transition cursor-pointer shadow-xs disabled:opacity-50'
+            >
+              {loadingAiReplies ? (
+                <Loader2 className='w-3 h-3 animate-spin' />
+              ) : (
+                <Wand2 className='w-3 h-3' />
+              )}
+              <span>Generate Smart Replies</span>
+            </button>
+          )}
+
+          {aiSmartReplies.length > 0 && (
+            <button
+              type='button'
+              onClick={fetchSmartReplies}
+              disabled={loadingAiReplies}
+              title='Regenerate AI Replies'
+              className='p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-gray-200 rounded-full cursor-pointer ml-auto shrink-0 transition'
+            >
+              {loadingAiReplies ? (
+                <Loader2 className='w-3.5 h-3.5 animate-spin text-indigo-500' />
+              ) : (
+                <RotateCw className='w-3.5 h-3.5' />
+              )}
+            </button>
           )}
         </div>
 
